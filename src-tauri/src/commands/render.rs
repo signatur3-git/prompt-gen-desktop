@@ -138,7 +138,7 @@ pub struct BatchRenderResult {
 }
 
 /// Simple type alias for the render result (for serialization)
-pub use crate::renderer::RenderResult;
+pub use crate::renderer::engine::RenderResult;
 
 #[cfg(test)]
 mod tests {
