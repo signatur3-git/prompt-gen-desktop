@@ -24,6 +24,7 @@ pub enum ParserError {
     #[error("Validation error: {0}")]
     Validation(String),
 
+    #[allow(dead_code)] // Used in error paths, may not be constructed in all cases
     #[error("Dependency not found: {0}")]
     DependencyNotFound(String),
 }
@@ -32,6 +33,7 @@ pub type Result<T> = std::result::Result<T, ParserError>;
 
 /// Package with loaded dependencies
 /// M8.5 Blocker 2 Phase 2: Support cross-package rule execution
+#[allow(dead_code)] // Part of API, used when loading packages with dependencies
 #[derive(Debug, Clone)]
 pub struct LoadedPackage {
     pub package: Package,
@@ -55,6 +57,7 @@ pub struct LoadedPackage {
 ///     version: "1.0.0"
 ///     path: "./test-base.yaml"  # Optional explicit path
 /// ```
+#[allow(dead_code)] // Part of API, used for loading packages with dependencies
 pub fn load_package_with_dependencies<P: AsRef<Path>>(path: P) -> Result<LoadedPackage> {
     use crate::parser::DependencyResolver;
 
