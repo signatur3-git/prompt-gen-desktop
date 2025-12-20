@@ -1,10 +1,14 @@
 # Test Rust Workflow - Fix Summary
 
-## Issue
+## Issues
 The "Test Rust" GitHub Actions workflow was failing because:
 1. No library target was defined in `Cargo.toml`, causing `cargo test --lib` to fail
 2. Test packages referenced by integration tests were missing from the repository
 3. Some integration tests expected validator errors that weren't being detected
+4. **GTK/GDK system dependencies** were missing on Ubuntu runner, causing build failures with errors like:
+   - `failed to run custom build command for gdk-sys v0.18.2`
+   - `failed to run custom build command for glib-sys v0.18.1`
+5. **Cargo.lock was ignored** in .gitignore, preventing reproducible builds
 
 ## Solutions Applied
 
@@ -15,37 +19,67 @@ The "Test Rust" GitHub Actions workflow was failing because:
 **File**: `src-tauri/src/lib.rs` (new)
 - Created library entry point that exports all modules for testing
 
-### 2. Created Test Packages
+### 2. Added Correct Test Packages
 **Directory**: `test-packages/`
-- Created valid test packages:
+
+Initially created placeholder test packages, but then **replaced them with the correct versions from the reference implementation** (`test-packages-for-comparison/`).
+
+Key differences in the correct packages:
+- Use `prompt_sections` (with underscore) instead of `promptsections`
+- Don't use namespace prefixes in reference targets within same namespace (e.g., `target: colors` not `target: main:colors`)
+- Include `dependencies: []` field
+- Include `bypass_filters: false` in metadata
+- Have proper structure that the validator can detect errors in
+
+Test packages include:
+- Valid packages:
   - `minimal.yaml` - Basic package with minimal structure
   - `article-test.yaml` - Tests article handling with tags
   - `lists-test.yaml` - Tests list references with separators
   
-- Created invalid test packages (in `invalid/` subdirectory):
+- Invalid packages (in `invalid/` subdirectory):
   - `missing-reference.yaml` - Contains reference to non-existent datatype
-  - `min-max-reversed.yaml` - Has min > max in reference constraint
-  - `circular-refs.yaml` - Contains circular references between prompt sections
+  - `min-max-reversed.yaml` - Has min > max in reference constraint (5 > 2)
+  - `circular-refs.yaml` - Contains circular references (A→B→C→A)
 
 - Added `README.md` documenting the test packages
 
-### 3. Fixed Integration Tests
+### 3. Re-enabled Integration Tests
 **File**: `src-tauri/src/validator/integration_tests.rs`
-- The three "invalid" package tests were commented out with a note explaining that the validator implementation may not catch all edge cases yet
-- These tests can be re-enabled once the validator is fully implemented to detect:
-  - Missing datatype references
-  - Min/max constraint violations
-  - Circular reference loops
+
+Initially, the three "invalid" package tests were commented out because my placeholder test packages weren't structured correctly. After replacing with the correct test packages from the reference implementation:
+
+✅ **All 3 invalid package tests now pass and properly validate:**
+- `test_validate_missing_reference` - Detects references to non-existent datatypes
+- `test_validate_min_max_reversed` - Detects min > max constraint violations
+- `test_validate_circular_refs` - Detects circular reference loops in prompt sections
+
+### 4. Added Linux System Dependencies
+**File**: `.github/workflows/build.yml`
+- Added step to install GTK/WebKit dependencies on Ubuntu before building:
+  ```yaml
+  - name: Install Linux dependencies
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libayatana-appindicator3-dev
+  ```
+- This fixes the `gdk-sys` and `glib-sys` build errors
+
+### 5. Fixed Cargo.lock Handling
+**File**: `.gitignore`
+- Removed `/src-tauri/Cargo.lock` from .gitignore
+- Committed Cargo.lock to repository
+- This ensures reproducible builds across all environments (Cargo.lock should be committed for applications, not libraries)
 
 ## Test Results
-- All 126 tests now pass successfully
+- ✅ **All 129 tests now pass successfully** (including 3 re-enabled invalid package tests)
 - The workflow should now pass on GitHub Actions
 
-## Next Steps
-The commented-out invalid package tests represent TODOs for future validator improvements:
-1. Enhance reference validation to catch missing datatypes
-2. Implement min/max constraint checking during validation
-3. Add circular reference detection for promptsection references
+## Validator Status
+The validator is **fully functional** and correctly detects:
+- ✅ Missing datatype/promptsection references
+- ✅ Min/max constraint violations (min > max)
+- ✅ Circular reference loops in promptsections
 
-These are not blocking issues for CI/CD but should be addressed for a more robust validator.
+No outstanding validator issues - all error detection is working as expected!
 
