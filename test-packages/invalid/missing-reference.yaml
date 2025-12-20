@@ -1,0 +1,34 @@
+metadata:
+  name: missing-reference
+  version: 1.0.0
+  author: Test
+  description: Invalid package with missing reference
+
+namespaces:
+  main:
+    datatypes:
+      colors:
+        values:
+          - red
+          - blue
+
+    promptsections:
+      item:
+        template: "{color} {material} item"
+        references:
+          color:
+            target: "main:colors"
+            min: 1
+            max: 1
+          material:
+            target: "main:materials"  # This datatype doesn't exist!
+            min: 1
+            max: 1
+
+rulebooks:
+  - name: default
+    description: Default rulebook
+    entry_points:
+      - prompt_section: "main:item"
+        weight: 1.0
+

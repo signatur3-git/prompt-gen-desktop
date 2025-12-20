@@ -1,0 +1,38 @@
+metadata:
+  name: circular-refs
+  version: 1.0.0
+  author: Test
+  description: Invalid package with circular references
+
+namespaces:
+  main:
+    datatypes:
+      colors:
+        values:
+          - red
+          - blue
+
+    promptsections:
+      scene1:
+        template: "Scene 1 with {scene2_ref}"
+        references:
+          scene2_ref:
+            target: "main:scene2"
+            min: 1
+            max: 1
+
+      scene2:
+        template: "Scene 2 with {scene1_ref}"
+        references:
+          scene1_ref:
+            target: "main:scene1"
+            min: 1
+            max: 1
+
+rulebooks:
+  - name: default
+    description: Default rulebook
+    entry_points:
+      - prompt_section: "main:scene1"
+        weight: 1.0
+

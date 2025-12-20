@@ -1,0 +1,62 @@
+metadata:
+  name: lists-test
+  version: 1.0.0
+  author: Test
+  description: Test package for lists
+
+namespaces:
+  main:
+    datatypes:
+      colors:
+        values:
+          - red
+          - blue
+          - green
+          - yellow
+          - purple
+
+      adjectives:
+        values:
+          - big
+          - small
+          - bright
+          - dark
+
+    separatorsets:
+      comma_list:
+        separators:
+          - value: ", "
+            weight: 1.0
+
+    promptsections:
+      color_list:
+        template: "{colors}"
+        references:
+          colors:
+            target: "main:colors"
+            min: 2
+            max: 4
+            separator: "main:comma_list"
+
+      item_description:
+        template: "{adjectives} {colors} item"
+        references:
+          adjectives:
+            target: "main:adjectives"
+            min: 1
+            max: 2
+            separator: "main:comma_list"
+          colors:
+            target: "main:colors"
+            min: 1
+            max: 1
+
+rulebooks:
+  - name: default
+    description: Default rulebook
+    entry_points:
+      - prompt_section: "main:color_list"
+        weight: 1.0
+      - prompt_section: "main:item_description"
+        weight: 1.0
+

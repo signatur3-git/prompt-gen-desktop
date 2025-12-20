@@ -1,0 +1,31 @@
+metadata:
+  name: min-max-reversed
+  version: 1.0.0
+  author: Test
+  description: Invalid package with min > max
+
+namespaces:
+  main:
+    datatypes:
+      colors:
+        values:
+          - red
+          - blue
+          - green
+
+    promptsections:
+      item:
+        template: "{colors}"
+        references:
+          colors:
+            target: "main:colors"
+            min: 5  # min is greater than max!
+            max: 2
+
+rulebooks:
+  - name: default
+    description: Default rulebook
+    entry_points:
+      - prompt_section: "main:item"
+        weight: 1.0
+

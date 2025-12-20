@@ -1,0 +1,31 @@
+metadata:
+  name: minimal
+  version: 1.0.0
+  author: Test
+  description: Minimal test package
+
+namespaces:
+  main:
+    datatypes:
+      colors:
+        values:
+          - red
+          - blue
+          - green
+
+    promptsections:
+      item:
+        template: "{color} item"
+        references:
+          color:
+            target: "main:colors"
+            min: 1
+            max: 1
+
+rulebooks:
+  - name: default
+    description: Default rulebook
+    entry_points:
+      - prompt_section: "main:item"
+        weight: 1.0
+
