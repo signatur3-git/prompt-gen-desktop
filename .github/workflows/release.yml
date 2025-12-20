@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-and-release:
-    name: Build and Release - ${{ matrix.platform }}
+    name: Build ${{ matrix.osName }}
     permissions:
       contents: write
     strategy:
@@ -15,15 +15,19 @@ jobs:
         include:
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
+            osName: windows-x64
             args: ''
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+            osName: linux-x64
             args: ''
           - platform: macos-latest
             target: aarch64-apple-darwin
+            osName: macos-arm64
             args: '--target aarch64-apple-darwin'
           - platform: macos-latest
             target: x86_64-apple-darwin
+            osName: macos-x64
             args: '--target x86_64-apple-darwin'
 
     runs-on: ${{ matrix.platform }}
@@ -74,8 +78,69 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: ${{ github.ref_name }}
-          releaseBody: 'See the release notes for details.'
+          releaseBody: |
+            ## Downloads
+            
+            **Windows (x64):**
+            - `rpg-desktop-windows-x64-standalone.zip` - Standalone executables (portable, no installation required)
+            - `.msi` - Windows Installer (recommended for most users)
+            - `.exe` - NSIS Installer
+            
+            **Linux (x64):**
+            - `rpg-desktop-linux-x64-standalone.tar.gz` - Standalone executables (portable)
+            - `.AppImage` - Portable application
+            - `.deb` - Debian/Ubuntu package
+            
+            **macOS:**
+            - `rpg-desktop-macos-*-standalone.tar.gz` - Standalone executables (portable)
+            - `.dmg` - Disk image for Intel Macs (x64) or Apple Silicon (ARM64)
+            - `.app.tar.gz` - Application bundle archive
+            
+            See the release notes for details.
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
           args: ${{ matrix.args }}
+          includeDebug: false
+          includeRelease: true
+
+      - name: Package and upload Windows standalone executables
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}"
+          $zipName = "rpg-desktop-windows-x64-standalone-$version.zip"
+          Compress-Archive -Path "src-tauri/target/release/rpg-desktop.exe", "src-tauri/target/release/rpg-cli.exe" -DestinationPath $zipName
+          gh release upload ${{ github.ref_name }} $zipName --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package and upload Linux standalone executables
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          version="${{ github.ref_name }}"
+          tar_name="rpg-desktop-linux-x64-standalone-$version.tar.gz"
+          tar -czf $tar_name -C src-tauri/target/release rpg-desktop rpg-cli
+          gh release upload ${{ github.ref_name }} $tar_name --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package and upload macOS standalone executables (Apple Silicon)
+        if: matrix.platform == 'macos-latest' && matrix.target == 'aarch64-apple-darwin'
+        run: |
+          version="${{ github.ref_name }}"
+          tar_name="rpg-desktop-macos-arm64-standalone-$version.tar.gz"
+          tar -czf $tar_name -C src-tauri/target/aarch64-apple-darwin/release rpg-desktop rpg-cli
+          gh release upload ${{ github.ref_name }} $tar_name --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package and upload macOS standalone executables (Intel)
+        if: matrix.platform == 'macos-latest' && matrix.target == 'x86_64-apple-darwin'
+        run: |
+          version="${{ github.ref_name }}"
+          tar_name="rpg-desktop-macos-x64-standalone-$version.tar.gz"
+          tar -czf $tar_name -C src-tauri/target/x86_64-apple-darwin/release rpg-desktop rpg-cli
+          gh release upload ${{ github.ref_name }} $tar_name --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
