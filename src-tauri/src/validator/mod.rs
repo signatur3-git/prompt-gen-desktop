@@ -290,10 +290,6 @@ impl PackageValidator {
         Self::validate_rulebooks(package, result);
     }
 
-    /// Semantic validation - references, logic, constraints (legacy, calls new method)
-    fn validate_semantics(package: &Package, result: &mut ValidationResult) {
-        Self::validate_semantics_with_deps(package, &HashMap::new(), result);
-    }
 
     /// Best practices validation - warnings for improvement
     fn validate_best_practices(package: &Package, result: &mut ValidationResult) {
@@ -386,10 +382,6 @@ impl PackageValidator {
         }
     }
 
-    // Validate all references resolve to existing datatypes/promptsections (legacy wrapper)
-    fn validate_references(package: &Package, result: &mut ValidationResult) {
-        Self::validate_references_with_deps(package, &HashMap::new(), result);
-    }
 
     /// M9 Phase 2.7: Check if a component exists in any dependency
     fn find_in_dependencies(
@@ -527,10 +519,8 @@ impl PackageValidator {
         }
 
         // Check if they start the same (at least 3 chars)
-        if a_lower.len() >= 3 && b_lower.len() >= 3 {
-            if a_lower[..3] == b_lower[..3] {
-                return true;
-            }
+        if a_lower.len() >= 3 && b_lower.len() >= 3 && a_lower[..3] == b_lower[..3] {
+            return true;
         }
 
         false
@@ -629,9 +619,9 @@ impl PackageValidator {
     fn validate_tag_filters(package: &Package, result: &mut ValidationResult) {
         use crate::renderer::tag_expression::ExpressionParser;
 
-        for (_ns_id, namespace) in &package.namespaces {
-            for (_ps_name, promptsection) in &namespace.prompt_sections {
-                for (_ref_name, reference) in &promptsection.references {
+        for namespace in package.namespaces.values() {
+            for promptsection in namespace.prompt_sections.values() {
+                for reference in promptsection.references.values() {
                     if let Some(filter) = &reference.filter {
                         // Try to parse the expression
                         match ExpressionParser::parse(filter) {
@@ -692,8 +682,8 @@ impl PackageValidator {
     // Validate unique constraints are feasible
     fn validate_unique_constraints(package: &Package, result: &mut ValidationResult) {
         for (ns_id, namespace) in &package.namespaces {
-            for (_ps_name, promptsection) in &namespace.prompt_sections {
-                for (_ref_name, reference) in &promptsection.references {
+            for promptsection in namespace.prompt_sections.values() {
+                for reference in promptsection.references.values() {
                     // Only check if unique is true and max > 1
                     if reference.unique && reference.max > 1 {
                         // Find the target datatype
@@ -782,7 +772,7 @@ impl PackageValidator {
                 }
 
                 // Validate context_defaults have valid key formats
-                for (key, _value) in &rulebook.context_defaults {
+                for key in rulebook.context_defaults.keys() {
                     // Keys can be "key" or "scope:key"
                     if key.is_empty() {
                         result.add_error(ValidationError::InvalidNaming {
@@ -883,7 +873,7 @@ impl PackageValidator {
     fn is_valid_semver(version: &str) -> bool {
         // Pattern: optional prefix (^, ~, >=, etc.) + three numbers separated by dots
         // Simpler regex without the regex crate
-        let parts: Vec<&str> = version.trim_start_matches(|c| c == '^' || c == '~' || c == '>' || c == '<' || c == '=')
+        let parts: Vec<&str> = version.trim_start_matches(['^', '~', '>', '<', '='])
             .split('.')
             .collect();
 
@@ -939,11 +929,11 @@ impl PackageValidator {
                     if let Some(target_namespace) = package.namespaces.get(&target_ns) {
                         if target_namespace.datatypes.contains_key(&target_name) {
                             used_datatypes.entry(target_ns.clone())
-                                .or_insert_with(HashSet::new)
+                                .or_default()
                                 .insert(target_name);
                         } else if target_namespace.prompt_sections.contains_key(&target_name) {
                             used_promptsections.entry(target_ns.clone())
-                                .or_insert_with(HashSet::new)
+                                .or_default()
                                 .insert(target_name);
                         }
                     }
@@ -951,7 +941,7 @@ impl PackageValidator {
                     // Check separator usage (separators are same-namespace only)
                     if let Some(sep) = &reference.separator {
                         used_separators.entry(_source_ns_id.clone())
-                            .or_insert_with(HashSet::new)
+                            .or_default()
                             .insert(sep.clone());
                     }
                 }

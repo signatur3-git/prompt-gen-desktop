@@ -157,7 +157,7 @@ impl ExpressionParser {
                         current.clear();
                     }
                     let mut string_val = String::new();
-                    while let Some(ch) = chars.next() {
+                    for ch in chars.by_ref() {
                         if ch == '"' {
                             break;
                         }

@@ -650,12 +650,15 @@ impl<'a> Renderer<'a> {
         use crate::renderer::seeded_random::SeededRandom;
 
         // If batch variety is enabled and we have tracking, filter out used entry points
-        let available_points: Vec<&crate::core::rulebook::EntryPoint> = if rulebook.batch_variety && used_entry_points.is_some() {
-            let used = used_entry_points.as_ref().unwrap();
-            rulebook.entry_points
-                .iter()
-                .filter(|ep| !used.contains(&ep.prompt_section))
-                .collect()
+        let available_points: Vec<&crate::core::rulebook::EntryPoint> = if let Some(used) = used_entry_points.as_ref() {
+            if rulebook.batch_variety {
+                rulebook.entry_points
+                    .iter()
+                    .filter(|ep| !used.contains(&ep.prompt_section))
+                    .collect()
+            } else {
+                rulebook.entry_points.iter().collect()
+            }
         } else {
             rulebook.entry_points.iter().collect()
         };

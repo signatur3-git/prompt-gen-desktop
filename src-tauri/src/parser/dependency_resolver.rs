@@ -177,11 +177,7 @@ impl DependencyResolver {
 
     /// Helper to resolve path for error messages
     fn resolve_path(&self, dep: &Dependency, base_path: Option<&Path>) -> Option<PathBuf> {
-        if let Ok(path) = self.find_package_path(dep, base_path) {
-            Some(path)
-        } else {
-            None
-        }
+        self.find_package_path(dep, base_path).ok()
     }
 
     /// Format the circular dependency cycle

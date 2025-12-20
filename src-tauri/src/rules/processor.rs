@@ -43,7 +43,7 @@ impl<'a> RulesProcessor<'a> {
     /// Execute all rules (from HashMap)
     pub fn execute_rules(&mut self, rules: &HashMap<String, Rule>) -> Result<()> {
         // Execute rules (order not guaranteed with HashMap, but that's acceptable for now)
-        for (_rule_id, rule) in rules {
+        for rule in rules.values() {
             self.execute_rule(rule)?;
         }
         Ok(())

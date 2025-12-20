@@ -12,6 +12,7 @@ The "Test Rust" GitHub Actions workflow was failing because:
 6. **Empty workflow files** (`pr-check.yml` and `release.yml`) caused "No event triggers defined in `on`" error
 7. **Package conflict** on Ubuntu 22.04: `libappindicator3-dev` conflicts with `libayatana-appindicator3-dev`
 8. **Missing icon.png**: Tauri requires `icon.png` for Linux builds, but only `icon.ico` existed
+9. **Doctest failure**: `extract_ref_dependencies` doctest had incorrect example code
 
 ## Solutions Applied
 
@@ -116,6 +117,20 @@ error: proc macro panicked
   - PixelFormat: Format32bppArgb (RGBA with alpha channel)
   - Simple blue circle design with "RPG" text
 - Linux/macOS require .png format, Windows can use .ico
+
+### 8. Fixed Doctest Example
+**File**: `src-tauri/src/renderer/tag_expression.rs`
+
+**Error encountered:**
+```
+error[E0425]: cannot find function `extract_ref_dependencies` in this scope
+error[E0425]: cannot find value `expr` in this scope
+```
+
+**Solution:**
+- Fixed the doctest example to have proper imports: `use rpg_lib::renderer::tag_expression::{extract_ref_dependencies, Expression};`
+- Used correct `Expression::InList` variant instead of incorrect `Expression::Comparison`
+- Added complete working example that compiles and runs
 
 ## Test Results
 - ✅ **All 129 tests now pass successfully** (including 3 re-enabled invalid package tests)

@@ -61,7 +61,7 @@ pub fn validate_exact_match(found: &str, required: &str) -> Result<(), VersionEr
     let found_version = Version::parse(found)?;
 
     // M9 Phase 3: Strip semver prefix from required version for parsing
-    let required_clean = required.trim_start_matches(|c| c == '^' || c == '~' || c == '>' || c == '<' || c == '=');
+    let required_clean = required.trim_start_matches(['^', '~', '>', '<', '=']);
     let required_version = Version::parse(required_clean)?;
 
     // Check if found version satisfies the requirement
