@@ -2,7 +2,13 @@ name: Release
 
 on:
   release:
-    types: [published]
+    types: [published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build release for'
+        required: true
+        type: string
 
 jobs:
   build-and-release:
@@ -69,78 +75,153 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build and upload to release
+      - name: Build Tauri application
         uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: ${{ github.ref_name }}
-          releaseBody: |
-            ## Downloads
-            
-            **Windows (x64):**
-            - `rpg-desktop-windows-x64-standalone.zip` - Standalone executables (portable, no installation required)
-            - `.msi` - Windows Installer (recommended for most users)
-            - `.exe` - NSIS Installer
-            
-            **Linux (x64):**
-            - `rpg-desktop-linux-x64-standalone.tar.gz` - Standalone executables (portable)
-            - `.AppImage` - Portable application
-            - `.deb` - Debian/Ubuntu package
-            
-            **macOS:**
-            - `rpg-desktop-macos-*-standalone.tar.gz` - Standalone executables (portable)
-            - `.dmg` - Disk image for Intel Macs (x64) or Apple Silicon (ARM64)
-            - `.app.tar.gz` - Application bundle archive
-            
-            See the release notes for details.
-          releaseDraft: false
-          prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
           args: ${{ matrix.args }}
-          includeDebug: false
-          includeRelease: true
+
+      - name: Ensure release exists
+        if: matrix.platform == 'windows-latest'
+        run: |
+          $tag = "${{ github.event.inputs.tag || github.ref_name }}"
+          $releaseBody = @"
+          ## Downloads
+          
+          **Windows (x64):**
+          - ``rpg-desktop-windows-x64-standalone-*.zip`` - Standalone executables (portable, no installation required)
+          - ``rpg-desktop-windows-x64-installer-*.msi`` - MSI Installer (recommended for most users)
+          - ``rpg-desktop-windows-x64-installer-*.exe`` - NSIS Installer
+          
+          **Linux (x64):**
+          - ``rpg-desktop-linux-x64-standalone-*.tar.gz`` - Standalone executables (portable)
+          - ``rpg-desktop-linux-x64-*.AppImage`` - Portable application
+          - ``rpg-desktop-linux-x64-*.deb`` - Debian/Ubuntu package
+          
+          **macOS (Apple Silicon):**
+          - ``rpg-desktop-macos-arm64-standalone-*.tar.gz`` - Standalone executables (portable)
+          - ``rpg-desktop-macos-arm64-*.dmg`` - Disk image
+          
+          **macOS (Intel):**
+          - ``rpg-desktop-macos-x64-standalone-*.tar.gz`` - Standalone executables (portable)
+          - ``rpg-desktop-macos-x64-*.dmg`` - Disk image
+          
+          See the release notes for details.
+          "@
+          
+          # Check if release exists
+          $releaseExists = gh release view $tag 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            # Update existing release body
+            gh release edit $tag --notes $releaseBody
+          } else {
+            # Create new release if it doesn't exist
+            $prerelease = ""
+            if ($tag -match "rc|beta|alpha") {
+              $prerelease = "--prerelease"
+            }
+            gh release create $tag --title $tag --notes $releaseBody $prerelease
+          }
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Package and upload Windows standalone executables
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}"
-          $zipName = "rpg-desktop-windows-x64-standalone-$version.zip"
+          $tag = "${{ github.event.inputs.tag || github.ref_name }}"
+          
+          # Package standalone executables
+          $zipName = "rpg-desktop-windows-x64-standalone-$tag.zip"
           Compress-Archive -Path "src-tauri/target/release/rpg-desktop.exe", "src-tauri/target/release/rpg-cli.exe" -DestinationPath $zipName
-          gh release upload ${{ github.ref_name }} $zipName --clobber
+          gh release upload $tag $zipName --clobber
+          
+          # Upload MSI installer with clear name
+          $msiFile = Get-ChildItem "src-tauri/target/release/bundle/msi/*.msi" | Select-Object -First 1
+          if ($msiFile) {
+            $msiNewName = "rpg-desktop-windows-x64-installer-$tag.msi"
+            Copy-Item $msiFile.FullName $msiNewName
+            gh release upload $tag $msiNewName --clobber
+          }
+          
+          # Upload NSIS installer with clear name
+          $nsisFile = Get-ChildItem "src-tauri/target/release/bundle/nsis/*.exe" | Select-Object -First 1
+          if ($nsisFile) {
+            $nsisNewName = "rpg-desktop-windows-x64-installer-$tag.exe"
+            Copy-Item $nsisFile.FullName $nsisNewName
+            gh release upload $tag $nsisNewName --clobber
+          }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Package and upload Linux standalone executables
         if: matrix.platform == 'ubuntu-22.04'
         run: |
-          version="${{ github.ref_name }}"
-          tar_name="rpg-desktop-linux-x64-standalone-$version.tar.gz"
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          
+          # Package standalone executables
+          tar_name="rpg-desktop-linux-x64-standalone-$tag.tar.gz"
           tar -czf $tar_name -C src-tauri/target/release rpg-desktop rpg-cli
-          gh release upload ${{ github.ref_name }} $tar_name --clobber
+          gh release upload $tag $tar_name --clobber
+          
+          # Upload AppImage with clear name
+          appimage_file=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" | head -1)
+          if [ -n "$appimage_file" ]; then
+            appimage_new_name="rpg-desktop-linux-x64-$tag.AppImage"
+            cp "$appimage_file" "$appimage_new_name"
+            gh release upload $tag "$appimage_new_name" --clobber
+          fi
+          
+          # Upload deb package with clear name
+          deb_file=$(find src-tauri/target/release/bundle/deb -name "*.deb" | head -1)
+          if [ -n "$deb_file" ]; then
+            deb_new_name="rpg-desktop-linux-x64-$tag.deb"
+            cp "$deb_file" "$deb_new_name"
+            gh release upload $tag "$deb_new_name" --clobber
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Package and upload macOS standalone executables (Apple Silicon)
         if: matrix.platform == 'macos-latest' && matrix.target == 'aarch64-apple-darwin'
         run: |
-          version="${{ github.ref_name }}"
-          tar_name="rpg-desktop-macos-arm64-standalone-$version.tar.gz"
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          
+          # Package standalone executables
+          tar_name="rpg-desktop-macos-arm64-standalone-$tag.tar.gz"
           tar -czf $tar_name -C src-tauri/target/aarch64-apple-darwin/release rpg-desktop rpg-cli
-          gh release upload ${{ github.ref_name }} $tar_name --clobber
+          gh release upload $tag $tar_name --clobber
+          
+          # Upload DMG with clear name
+          dmg_file=$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
+          if [ -n "$dmg_file" ]; then
+            dmg_new_name="rpg-desktop-macos-arm64-$tag.dmg"
+            cp "$dmg_file" "$dmg_new_name"
+            gh release upload $tag "$dmg_new_name" --clobber
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Package and upload macOS standalone executables (Intel)
         if: matrix.platform == 'macos-latest' && matrix.target == 'x86_64-apple-darwin'
         run: |
-          version="${{ github.ref_name }}"
-          tar_name="rpg-desktop-macos-x64-standalone-$version.tar.gz"
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          
+          # Package standalone executables
+          tar_name="rpg-desktop-macos-x64-standalone-$tag.tar.gz"
           tar -czf $tar_name -C src-tauri/target/x86_64-apple-darwin/release rpg-desktop rpg-cli
-          gh release upload ${{ github.ref_name }} $tar_name --clobber
+          gh release upload $tag $tar_name --clobber
+          
+          # Upload DMG with clear name
+          dmg_file=$(find src-tauri/target/x86_64-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
+          if [ -n "$dmg_file" ]; then
+            dmg_new_name="rpg-desktop-macos-x64-$tag.dmg"
+            cp "$dmg_file" "$dmg_new_name"
+            gh release upload $tag "$dmg_new_name" --clobber
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
