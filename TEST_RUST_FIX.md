@@ -93,24 +93,29 @@ This fixes both the `gdk-sys`/`glib-sys` build errors and the package conflict.
 - **Solution**: Deleted the empty files
 - Note: These workflows can be re-added later when needed with proper content
 
-### 7. Added Missing Icon File
+### 7. Added Missing Icon File (RGBA Format Required)
 **File**: `src-tauri/icons/icon.png` (new)
 
-**Error encountered:**
+**Error encountered (first attempt):**
 ```
 error: proc macro panicked
-  --> src/main.rs:33:14
-   |
-33 |         .run(tauri::generate_context!())
-   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: message: failed to open icon /home/runner/work/prompt-gen-desktop/prompt-gen-desktop/src-tauri/icons/icon.png: No such file or directory (os error 2)
+  = help: message: failed to open icon .../src-tauri/icons/icon.png: No such file or directory (os error 2)
+```
+
+**Error encountered (second attempt - wrong format):**
+```
+error: proc macro panicked
+  = help: message: icon .../src-tauri/icons/icon.png is not RGBA
 ```
 
 **Solution:** 
-- Generated `icon.png` from existing `icon.ico` using ImageMagick: `magick convert icon.ico icon.png`
-- Tauri requires PNG format icons for Linux builds
-- Windows can use .ico, but Linux/macOS need .png
+- Created proper RGBA PNG icon (32x32 pixels, Format32bppArgb)
+- Tauri requires PNG icons in **RGBA format specifically** (not RGB, not indexed)
+- Used PowerShell with System.Drawing to create a proper RGBA PNG:
+  - 32x32 pixels
+  - PixelFormat: Format32bppArgb (RGBA with alpha channel)
+  - Simple blue circle design with "RPG" text
+- Linux/macOS require .png format, Windows can use .ico
 
 ## Test Results
 - ✅ **All 129 tests now pass successfully** (including 3 re-enabled invalid package tests)
