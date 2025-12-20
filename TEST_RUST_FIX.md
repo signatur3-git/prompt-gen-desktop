@@ -10,6 +10,7 @@ The "Test Rust" GitHub Actions workflow was failing because:
    - `failed to run custom build command for glib-sys v0.18.1`
 5. **Cargo.lock was ignored** in .gitignore, preventing reproducible builds
 6. **Empty workflow files** (`pr-check.yml` and `release.yml`) caused "No event triggers defined in `on`" error
+7. **Package conflict** on Ubuntu 22.04: `libappindicator3-dev` conflicts with `libayatana-appindicator3-dev`
 
 ## Solutions Applied
 
@@ -55,16 +56,28 @@ Initially, the three "invalid" package tests were commented out because my place
 - `test_validate_min_max_reversed` - Detects min > max constraint violations
 - `test_validate_circular_refs` - Detects circular reference loops in prompt sections
 
-### 4. Added Linux System Dependencies
+### 4. Added Linux System Dependencies (Fixed Package Conflict)
 **File**: `.github/workflows/build.yml`
-- Added step to install GTK/WebKit dependencies on Ubuntu before building:
+
+Initially attempted to install both `libappindicator3-dev` and `libayatana-appindicator3-dev`, but these packages conflict with each other on Ubuntu 22.04.
+
+**Error encountered:**
+```
+The following packages have unmet dependencies:
+ libayatana-appindicator3-1 : Conflicts: libappindicator3-1
+ libayatana-appindicator3-dev : Conflicts: libappindicator3-dev
+E: Unable to correct problems, you have held broken packages.
+```
+
+**Solution:** Use only `libayatana-appindicator3-dev` (the newer Ayatana fork, preferred for Tauri 2.x):
   ```yaml
   - name: Install Linux dependencies
     run: |
       sudo apt-get update
-      sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libayatana-appindicator3-dev
+      sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev patchelf libayatana-appindicator3-dev
   ```
-- This fixes the `gdk-sys` and `glib-sys` build errors
+
+This fixes both the `gdk-sys`/`glib-sys` build errors and the package conflict.
 
 ### 5. Fixed Cargo.lock Handling
 **File**: `.gitignore`
