@@ -511,8 +511,19 @@ pub fn evaluate_with_context(
 ///
 /// # Example
 /// ```
+/// use rpg_lib::renderer::tag_expression::{extract_ref_dependencies, Expression};
+///
+/// // Example: "ref:body_part.text in tags.applies_to"
+/// let expr = Expression::InList {
+///     value: Box::new(Expression::RefAccess {
+///         ref_name: "body_part".to_string(),
+///         field_path: vec!["text".to_string()],
+///     }),
+///     list_tag: "applies_to".to_string(),
+/// };
+///
 /// let deps = extract_ref_dependencies(&expr);
-/// // Returns vec!["body_part"] for "ref:body_part.text in tags.applies_to"
+/// assert_eq!(deps, vec!["body_part"]);
 /// ```
 pub fn extract_ref_dependencies(expr: &Expression) -> Vec<String> {
     let mut deps = Vec::new();
