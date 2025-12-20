@@ -1,0 +1,42 @@
+# Test Package - Dependent
+# This package depends on test.base
+
+id: test.dependent
+version: 1.0.0
+
+metadata:
+  name: Test Dependent Package
+  description: Package that depends on test.base
+  authors: [RPG Team]
+  bypass_filters: false
+
+# M9 Phase 2: Dependencies declaration
+dependencies:
+  - package: test.base
+    version: "1.0.0"
+    path: "./test-base.yaml"
+
+namespaces:
+  dependent:
+    id: dependent
+    datatypes:
+      objects:
+        name: objects
+        values:
+          - text: ball
+            weight: 1
+          - text: box
+            weight: 1
+          - text: cube
+            weight: 1
+
+    prompt_sections:
+      colored_object:
+        name: colored_object
+        template: "{color} {object}"
+        references:
+          color:
+            target: base:colors  # Cross-package reference
+          object:
+            target: objects
+

@@ -1,0 +1,156 @@
+# M5 Phase 2: Complex Tag Expressions Test Package
+
+id: test.complex-tags
+version: 1.0.0
+
+metadata:
+  name: "Complex Tag Expressions Test"
+  description: "Tests M5 Phase 2 - AND/OR/NOT operators in tag filters"
+  authors: ["RPG Dev Team"]
+  bypass_filters: false
+
+namespaces:
+  test:
+    id: test
+
+    datatypes:
+      creatures:
+        name: creatures
+        values:
+          - text: "owl"
+            tags:
+              can_fly: true
+              nocturnal: true
+              domesticated: false
+            weight: 1
+
+          - text: "bat"
+            tags:
+              can_fly: true
+              nocturnal: true
+              domesticated: false
+            weight: 1
+
+          - text: "eagle"
+            tags:
+              can_fly: true
+              nocturnal: false
+              domesticated: false
+            weight: 1
+
+          - text: "cat"
+            tags:
+              can_fly: false
+              nocturnal: true
+              domesticated: true
+            weight: 1
+
+          - text: "dog"
+            tags:
+              can_fly: false
+              nocturnal: false
+              domesticated: true
+            weight: 1
+
+      weapons:
+        name: weapons
+        values:
+          - text: "sword"
+            tags:
+              type: "melee"
+              magical: false
+            weight: 1
+
+          - text: "staff"
+            tags:
+              type: "melee"
+              magical: true
+            weight: 1
+
+          - text: "bow"
+            tags:
+              type: "ranged"
+              magical: false
+            weight: 1
+
+          - text: "wand"
+            tags:
+              type: "ranged"
+              magical: true
+            weight: 1
+
+      animals:
+        name: animals
+        values:
+          - text: "wolf"
+            tags:
+              dangerous: true
+              domesticated: false
+            weight: 1
+
+          - text: "bear"
+            tags:
+              dangerous: true
+              domesticated: false
+            weight: 1
+
+          - text: "rabbit"
+            tags:
+              dangerous: false
+              domesticated: false
+            weight: 1
+
+          - text: "hamster"
+            tags:
+              dangerous: false
+              domesticated: true
+            weight: 1
+
+    prompt_sections:
+      # AND operator test
+      nocturnal_flyers:
+        name: nocturnal_flyers
+        template: "A {creature#{tags.can_fly && tags.nocturnal}} flies at night"
+        references:
+          creature:
+            target: test:creatures
+        # Should only match: owl, bat
+
+      # OR operator test
+      magical_or_melee:
+        name: magical_or_melee
+        template: "Wielding a {weapon#{tags.type == \"melee\" || tags.magical}}"
+        references:
+          weapon:
+            target: test:weapons
+        # Should match: sword, staff, wand (not bow)
+
+      # NOT operator test
+      wild_animals:
+        name: wild_animals
+        template: "A wild {animal#{!tags.domesticated}} appears"
+        references:
+          animal:
+            target: test:animals
+        # Should match: wolf, bear, rabbit (not hamster)
+
+      # Complex combination test
+      safe_pets:
+        name: safe_pets
+        template: "A safe pet: {animal#{!tags.dangerous && tags.domesticated}}"
+        references:
+          animal:
+            target: test:animals
+        # Should only match: hamster
+
+      # Multiple conditions
+      daytime_flyers:
+        name: daytime_flyers
+        template: "A {creature#{tags.can_fly && !tags.nocturnal}} soars overhead"
+        references:
+          creature:
+            target: test:creatures
+        # Should only match: eagle
+
+dependencies: []
+

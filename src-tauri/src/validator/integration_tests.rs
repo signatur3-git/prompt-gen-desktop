@@ -43,11 +43,6 @@ mod integration_tests {
             "lists-test.yaml should be valid. Errors: {:?}", result.errors);
     }
 
-    // Note: These "invalid" tests are currently commented out because the validator
-    // implementation may not catch all these edge cases yet. Once the validator is
-    // fully implemented, these tests can be re-enabled.
-
-    /*
     #[test]
     fn test_validate_missing_reference() {
         let content = fs::read_to_string("../test-packages/invalid/missing-reference.yaml")
@@ -56,8 +51,7 @@ mod integration_tests {
 
         let result = PackageValidator::validate(&package);
 
-        println!("Validation result: is_valid={}, errors={:?}", result.is_valid(), result.errors);
-        assert!(!result.is_valid(), "missing-reference.yaml should be invalid");
+        assert!(!result.is_valid(), "missing-reference.yaml should be invalid. Errors: {:?}", result.errors);
         assert!(result.errors.len() > 0, "Should have at least one error");
     }
 
@@ -69,10 +63,9 @@ mod integration_tests {
 
         let result = PackageValidator::validate(&package);
 
-        println!("Validation result: is_valid={}, errors={:?}", result.is_valid(), result.errors);
-        assert!(!result.is_valid(), "min-max-reversed.yaml should be invalid");
+        assert!(!result.is_valid(), "min-max-reversed.yaml should be invalid. Errors: {:?}", result.errors);
         assert!(result.errors.iter().any(|e| matches!(e, crate::validator::ValidationError::MinMaxInvalid { .. })),
-            "Should have MinMaxInvalid error");
+            "Should have MinMaxInvalid error. Got: {:?}", result.errors);
     }
 
     #[test]
@@ -83,11 +76,9 @@ mod integration_tests {
 
         let result = PackageValidator::validate(&package);
 
-        println!("Validation result: is_valid={}, errors={:?}", result.is_valid(), result.errors);
-        assert!(!result.is_valid(), "circular-refs.yaml should be invalid");
+        assert!(!result.is_valid(), "circular-refs.yaml should be invalid. Errors: {:?}", result.errors);
         assert!(result.errors.iter().any(|e| matches!(e, crate::validator::ValidationError::CircularReference { .. })),
-            "Should have CircularReference error");
+            "Should have CircularReference error. Got: {:?}", result.errors);
     }
-    */
 }
 

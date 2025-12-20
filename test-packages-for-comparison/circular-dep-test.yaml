@@ -1,0 +1,38 @@
+id: test.circular-dependency
+version: 1.0.0
+
+metadata:
+  name: "Circular Dependency Test"
+  description: "Tests circular dependency detection"
+  authors: ["Test"]
+  bypass_filters: false
+
+namespaces:
+  test:
+    id: test
+
+    datatypes:
+      items_a:
+        name: items_a
+        values:
+          - text: item1
+            tags: {article: an, type_a: true}
+
+      items_b:
+        name: items_b
+        values:
+          - text: item2
+            tags: {article: an, type_b: true}
+
+    prompt_sections:
+      circular_test:
+        name: circular_test
+        template: "{a} and {b}"
+        references:
+          a:
+            target: test:items_a
+            filter: "ref:b.tags.type_b"
+          b:
+            target: test:items_b
+            filter: "ref:a.tags.type_a"
+

@@ -1,0 +1,47 @@
+id: signatur3-git.midjourney-v8
+version: 1.0.0
+metadata:
+  name: Sig's Midjourney V8 Package
+  description: Just test prompts for Midjourney V8
+  authors:
+  - signatur3-git
+  bypass_filters: false
+namespaces:
+  signatur3-git.midjourney:
+    id: signatur3-git.midjourney
+    datatypes:
+      colors:
+        name: colors
+        values:
+        - text: red
+          tags: {}
+          weight: 1.0
+        - text: blue
+          tags: {}
+          weight: 1.0
+        - text: green
+          tags: {}
+          weight: 1.0
+        extends: null
+        override_tags: {}
+    prompt_sections:
+      simple:
+        name: simple
+        template: A {color} ball
+        references:
+          color:
+            target: colors
+            filter: null
+            min: 1
+            max: 1
+            separator: null
+            unique: false
+    separator_sets:
+      comma_and:
+        name: comma_and
+        primary: ', '
+        secondary: ' and '
+        tertiary: null
+    rules: {}
+    decisions: []
+dependencies: []

@@ -1,0 +1,184 @@
+id: test.lists
+version: 1.0.0
+metadata:
+  name: Lists and Separator Sets Test
+  description: Tests M5 Phase 3+4 - min/max multiplicity and separator sets
+  authors:
+  - RPG Dev Team
+  bypass_filters: false
+namespaces:
+  test:
+    id: test
+    datatypes:
+      creatures:
+        name: creatures
+        values:
+        - text: owl
+          tags:
+            can_fly: true
+            article: an
+          weight: 1.0
+        - text: eagle
+          tags:
+            article: an
+            can_fly: true
+          weight: 1.0
+        - text: swan
+          tags:
+            article: a
+            can_fly: true
+          weight: 1.0
+        - text: bat
+          tags:
+            can_fly: true
+            article: a
+          weight: 1.0
+        - text: deer
+          tags:
+            can_fly: false
+            article: a
+          weight: 1.0
+        extends: null
+        override_tags: {}
+      adjectives:
+        name: adjectives
+        values:
+        - text: beautiful
+          tags: {}
+          weight: 1.0
+        - text: mysterious
+          tags: {}
+          weight: 1.0
+        - text: ancient
+          tags: {}
+          weight: 1.0
+        - text: magical
+          tags: {}
+          weight: 1.0
+        extends: null
+        override_tags: {}
+      colors:
+        name: colors
+        values:
+        - text: red
+          tags: {}
+          weight: 1.0
+        - text: blue
+          tags: {}
+          weight: 1.0
+        - text: green
+          tags: {}
+          weight: 1.0
+        - text: yellow
+          tags: {}
+          weight: 1.0
+        - text: purple
+          tags: {}
+          weight: 1.0
+        extends: null
+        override_tags: {}
+    prompt_sections:
+      simple_list:
+        name: simple_list
+        template: '{colors} {adjective1}'
+        references:
+          adjective1:
+            target: test:adjectives
+            filter: null
+            min: 1
+            max: 1
+            separator: null
+            unique: false
+          colors:
+            target: test:colors
+            filter: null
+            min: 2
+            max: 4
+            separator: null
+            unique: false
+      unique_colors:
+        name: unique_colors
+        template: '{colors}'
+        references:
+          colors:
+            target: test:colors
+            filter: null
+            min: 3
+            max: 3
+            separator: comma_and
+            unique: true
+      flying_creatures_with_article:
+        name: flying_creatures_with_article
+        template: '{article} {creatures}'
+        references:
+          article:
+            target: context:article
+            filter: null
+            min: 1
+            max: 1
+            separator: null
+            unique: false
+          creatures:
+            target: test:creatures
+            filter: tags.can_fly
+            min: 2
+            max: 3
+            separator: comma_and
+            unique: false
+      natural_list:
+        name: natural_list
+        template: '{colors}'
+        references:
+          colors:
+            target: test:colors
+            filter: null
+            min: 2
+            max: 3
+            separator: comma_and
+            unique: false
+      optional_adjectives:
+        name: optional_adjectives
+        template: A {adjectives} castle
+        references:
+          adjectives:
+            target: test:adjectives
+            filter: null
+            min: 0
+            max: 2
+            separator: comma_and
+            unique: false
+      or_list:
+        name: or_list
+        template: Choose {colors}
+        references:
+          colors:
+            target: test:colors
+            filter: null
+            min: 2
+            max: 3
+            separator: comma_or
+            unique: false
+    separator_sets:
+      semicolon:
+        name: semicolon
+        primary: '; '
+        secondary: '; '
+        tertiary: null
+      comma_and:
+        name: comma_and
+        primary: ', '
+        secondary: ' and '
+        tertiary: null
+      comma_or:
+        name: comma_or
+        primary: ', '
+        secondary: ' or '
+        tertiary: null
+    rules:
+      compute_article_from_creatures:
+        when: "ref:creatures.tags.article"
+        logic: ""
+        set: "context.prompt.article"
+        value: "ref:creatures.tags.article"
+    decisions: []
+dependencies: []

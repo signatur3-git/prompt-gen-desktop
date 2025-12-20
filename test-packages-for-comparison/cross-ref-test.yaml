@@ -1,0 +1,60 @@
+id: test.cross-ref-filtering
+version: 1.0.0
+
+metadata:
+  name: "Cross-Reference Filtering Test"
+  description: "Tests ref:other.text in tags.applies_to syntax"
+  authors: ["Test"]
+  bypass_filters: false
+
+namespaces:
+  test:
+    id: test
+
+    datatypes:
+      body_parts:
+        name: body_parts
+        values:
+          - text: skin
+            tags: {article: a, type: body_part}
+          - text: face
+            tags: {article: a, type: body_part}
+          - text: eyes
+            tags: {article: an, type: body_part}
+          - text: beard
+            tags: {article: a, type: body_part}
+          - text: hair
+            tags: {article: a, type: body_part}
+
+      qualities:
+        name: qualities
+        values:
+          - text: scarred
+            tags: {article: a, applies_to: [skin, face]}
+          - text: piercing
+            tags: {article: a, applies_to: [eyes]}
+          - text: flowing
+            tags: {article: a, applies_to: [hair, beard]}
+          - text: weathered
+            tags: {article: a, applies_to: [skin, face, hands]}
+
+    rules:
+      compute_article:
+        when: "ref:body_part.tags.article"
+        logic: ""
+        set: "context.prompt.article"
+        value: "ref:body_part.tags.article"
+
+    prompt_sections:
+      feature_with_filter:
+        name: feature_with_filter
+        template: "{article} {quality} {body_part}"
+        references:
+          article:
+            target: context:article
+          quality:
+            target: test:qualities
+            filter: "ref:body_part.text in tags.applies_to"
+          body_part:
+            target: test:body_parts
+

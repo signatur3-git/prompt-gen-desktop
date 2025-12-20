@@ -1,0 +1,113 @@
+# M5 Phase 1: Nested PromptSections Test Package
+
+id: test.nested
+version: 1.0.0
+
+metadata:
+  name: "Nested PromptSections Test"
+  description: "Tests M5 Phase 1 - templates can reference other templates"
+  authors: ["RPG Dev Team"]
+  bypass_filters: false
+
+namespaces:
+  test:
+    id: test
+
+    # Simple datatypes
+    datatypes:
+      greetings:
+        name: greetings
+        values:
+          - text: "Hello"
+            weight: 1
+          - text: "Hi"
+            weight: 1
+          - text: "Greetings"
+            weight: 1
+
+      names:
+        name: names
+        values:
+          - text: "Alice"
+            weight: 1
+          - text: "Bob"
+            weight: 1
+          - text: "Charlie"
+            weight: 1
+
+      closings:
+        name: closings
+        values:
+          - text: "Have a great day"
+            weight: 1
+          - text: "See you soon"
+            weight: 1
+          - text: "Take care"
+            weight: 1
+
+      actions:
+        name: actions
+        values:
+          - text: "walks into"
+            weight: 1
+          - text: "enters"
+            weight: 1
+          - text: "arrives at"
+            weight: 1
+
+      locations:
+        name: locations
+        values:
+          - text: "the tavern"
+            weight: 1
+          - text: "the castle"
+            weight: 1
+          - text: "the village square"
+            weight: 1
+
+    # Promptsections with nesting
+    prompt_sections:
+      # Level 1: Simple greeting
+      greeting:
+        name: greeting
+        template: "{greeting_word}, {person_name}!"
+        references:
+          greeting_word:
+            target: test:greetings
+          person_name:
+            target: test:names
+
+      # Level 1: Simple action
+      action_phrase:
+        name: action_phrase
+        template: "{action} {location}"
+        references:
+          action:
+            target: test:actions
+          location:
+            target: test:locations
+
+      # Level 2: Uses greeting (nested 1 level)
+      full_greeting:
+        name: full_greeting
+        template: "{greeting} {closing}."
+        references:
+          greeting:
+            target: test:greeting  # ← Nested promptsection
+          closing:
+            target: test:closings
+
+      # Level 3: Uses full_greeting (nested 2 levels)
+      scene_description:
+        name: scene_description
+        template: "{intro} {person_name} {action_desc}."
+        references:
+          intro:
+            target: test:full_greeting  # ← Nested 2 levels deep
+          person_name:
+            target: test:names
+          action_desc:
+            target: test:action_phrase  # ← Another nested promptsection
+
+dependencies: []
+

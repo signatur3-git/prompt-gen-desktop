@@ -1,0 +1,44 @@
+# Test Package - Base
+# This is a simple base package that other packages can depend on
+
+id: test.base
+version: 1.0.0
+
+metadata:
+  name: Test Base Package
+  description: Base package with simple datatypes for testing dependencies
+  authors: [RPG Team]
+  bypass_filters: false
+
+namespaces:
+  base:
+    id: base
+    datatypes:
+      colors:
+        name: colors
+        values:
+          - text: red
+            weight: 1
+          - text: blue
+            weight: 1
+          - text: green
+            weight: 1
+
+      sizes:
+        name: sizes
+        values:
+          - text: small
+            weight: 1
+          - text: medium
+            weight: 1
+          - text: large
+            weight: 1
+
+    prompt_sections:
+      simple_color:
+        name: simple_color
+        template: "{color} thing"
+        references:
+          color:
+            target: colors
+

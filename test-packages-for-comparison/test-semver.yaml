@@ -1,0 +1,38 @@
+# Test package with flexible semver
+id: test.semver
+version: 0.1.0
+
+metadata:
+  name: Test Semver Package
+  description: Testing flexible semver dependencies
+  authors: [RPG Team]
+  bypass_filters: false
+
+# Test flexible dependency versions
+dependencies:
+  - package: test.base
+    version: "^1.0.0"  # Caret - compatible updates
+    path: "./test-base.yaml"
+
+namespaces:
+  test:
+    id: test
+    datatypes:
+      items:
+        name: items
+        values:
+          - text: sword
+            weight: 1
+          - text: shield
+            weight: 1
+
+    prompt_sections:
+      colored_item:
+        name: colored_item
+        template: "{color} {item}"
+        references:
+          color:
+            target: base:colors  # From test.base dependency
+          item:
+            target: items
+

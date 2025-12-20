@@ -1,0 +1,41 @@
+id: test.base
+version: 1.0.0
+
+metadata:
+  name: "Test Base Package"
+  description: "Base package with shared rules"
+  authors: ["Test"]
+  bypass_filters: false
+
+namespaces:
+  base:
+    id: base
+
+    datatypes:
+      nouns:
+        name: nouns
+        values:
+          - text: swan
+            tags: {article: a}
+          - text: eagle
+            tags: {article: an}
+          - text: owl
+            tags: {article: an}
+
+    rules:
+      compute_article:
+        when: "ref:noun.tags.article"
+        logic: ""
+        set: "context.prompt.article"
+        value: "ref:noun.tags.article"
+
+    prompt_sections:
+      test_section:
+        name: test_section
+        template: "{article} {noun}"
+        references:
+          article:
+            target: context:article
+          noun:
+            target: base:nouns
+

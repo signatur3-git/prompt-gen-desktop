@@ -1,0 +1,49 @@
+id: test.derived
+version: 1.0.0
+
+metadata:
+  name: "Test Derived Package"
+  description: "Package that uses rules from base package"
+  authors: ["Test"]
+  bypass_filters: false
+
+dependencies:
+  - package_id: test.base
+    version: "1.0.0"
+
+namespaces:
+  derived:
+    id: derived
+
+    datatypes:
+      colors:
+        name: colors
+        values:
+          - text: red
+            tags: {article: a}
+          - text: orange
+            tags: {article: an}
+          - text: blue
+            tags: {article: a}
+      objects:
+        name: objects
+        values:
+          - text: car
+            tags: {article: a}
+          - text: umbrella
+            tags: {article: an}
+          - text: house
+            tags: {article: a}
+
+    prompt_sections:
+      color_object:
+        name: color_object
+        template: "{article} {color} {noun}"
+        references:
+          article:
+            target: context:article
+          color:
+            target: derived:colors
+          noun:
+            target: derived:objects
+

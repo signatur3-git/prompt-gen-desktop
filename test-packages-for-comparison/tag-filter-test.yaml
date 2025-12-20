@@ -1,0 +1,154 @@
+# Tag Filtering Test Package
+# Tests M4 Phase 5: Tag Filtering
+
+id: test.tag-filtering
+version: 1.0.0
+
+metadata:
+  name: "Tag Filtering Test"
+  description: "Demonstrates tag-based filtering of datatypes"
+  authors: ["RPG Dev Team"]
+  bypass_filters: false
+
+namespaces:
+  test:
+    id: test
+    datatypes:
+      # Animals with movement capabilities
+      animals:
+        name: animals
+        values:
+          - text: "eagle"
+            tags:
+              can_fly: true
+              can_swim: false
+              can_run: false
+              article: "an"
+            weight: 1
+
+          - text: "swan"
+            tags:
+              can_fly: true
+              can_swim: true
+              can_run: false
+              article: "a"
+            weight: 1
+
+          - text: "deer"
+            tags:
+              can_fly: false
+              can_swim: false
+              can_run: true
+              article: "a"
+            weight: 1
+
+          - text: "duck"
+            tags:
+              can_fly: true
+              can_swim: true
+              can_run: false
+              article: "a"
+            weight: 1
+
+          - text: "rabbit"
+            tags:
+              can_fly: false
+              can_swim: false
+              can_run: true
+              article: "a"
+            weight: 1
+
+      # Colors with mood tags
+      colors:
+        name: colors
+        values:
+          - text: "red"
+            tags:
+              mood: "energetic"
+              article: "a"
+            weight: 1
+
+          - text: "blue"
+            tags:
+              mood: "peaceful"
+              article: "a"
+            weight: 1
+
+          - text: "green"
+            tags:
+              mood: "peaceful"
+              article: "a"
+            weight: 1
+
+          - text: "orange"
+            tags:
+              mood: "energetic"
+              article: "an"
+            weight: 1
+
+          - text: "purple"
+            tags:
+              mood: "peaceful"
+              article: "a"
+            weight: 1
+
+    prompt_sections:
+      # Flying animals only
+      flying_scene:
+        name: flying_scene
+        template: "{article} {animal#{tags.can_fly}} flies overhead"
+        references:
+          article:
+            target: "context:article"
+          animal:
+            target: "test:animals"
+
+      # Swimming animals only
+      swimming_scene:
+        name: swimming_scene
+        template: "{article} {animal#{tags.can_swim}} swims gracefully"
+        references:
+          article:
+            target: "context:article"
+          animal:
+            target: "test:animals"
+
+      # Running animals only
+      running_scene:
+        name: running_scene
+        template: "{article} {animal#{tags.can_run}} runs quickly"
+        references:
+          article:
+            target: "context:article"
+          animal:
+            target: "test:animals"
+
+      # Peaceful colors only (no filter - all colors for now)
+      peaceful_scene:
+        name: peaceful_scene
+        template: "{article} {color} landscape"
+        references:
+          article:
+            target: "context:article"
+          color:
+            target: "test:colors"
+
+    rules:
+      # Try to compute article from color (for peaceful_scene)
+      - name: compute_article_from_color
+        phase: enrichment
+        logic:
+          - set: article
+            from: "ref:color.tags.article"
+            scope: prompt
+
+      # Try to compute article from animal (for flying/swimming/running scenes)
+      - name: compute_article_from_animal
+        phase: enrichment
+        logic:
+          - set: article
+            from: "ref:animal.tags.article"
+            scope: prompt
+
+dependencies: []
+

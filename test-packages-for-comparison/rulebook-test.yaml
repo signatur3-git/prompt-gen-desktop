@@ -1,0 +1,126 @@
+id: test.rulebook
+version: 1.0.0
+metadata:
+  name: Rulebook Test Package
+  description: A test package for M9 Rulebook implementation
+  authors:
+    - Test Author
+  bypass_filters: false
+
+namespaces:
+  test:
+    id: test
+    datatypes:
+      colors:
+        name: colors
+        values:
+          - text: red
+            weight: 1.0
+          - text: blue
+            weight: 1.0
+          - text: green
+            weight: 1.0
+
+      objects:
+        name: objects
+        values:
+          - text: apple
+            weight: 1.0
+          - text: ball
+            weight: 1.0
+          - text: car
+            weight: 1.0
+
+      locations:
+        name: locations
+        values:
+          - text: park
+            weight: 1.0
+          - text: beach
+            weight: 1.0
+          - text: mountain
+            weight: 1.0
+
+    prompt_sections:
+      simple_color:
+        name: simple_color
+        template: "a {color} item"
+        references:
+          color:
+            target: test:colors
+            min: 1
+            max: 1
+
+      object_location:
+        name: object_location
+        template: "a {object} at the {location}"
+        references:
+          object:
+            target: test:objects
+            min: 1
+            max: 1
+          location:
+            target: test:locations
+            min: 1
+            max: 1
+
+      colored_object:
+        name: colored_object
+        template: "a {color} {object}"
+        references:
+          color:
+            target: test:colors
+            min: 1
+            max: 1
+          object:
+            target: test:objects
+            min: 1
+            max: 1
+
+    rulebooks:
+      basic_scenes:
+        name: Basic Scenes
+        description: Simple test rulebook with weighted entry points
+        entry_points:
+          - prompt_section: test:simple_color
+            weight: 1.0
+          - prompt_section: test:object_location
+            weight: 2.0
+          - prompt_section: test:colored_object
+            weight: 1.5
+        batch_variety: false
+        context_defaults: {}
+
+      varied_scenes:
+        name: Varied Scenes
+        description: Rulebook with batch variety enabled
+        entry_points:
+          - prompt_section: test:simple_color
+            weight: 1.0
+          - prompt_section: test:object_location
+            weight: 1.0
+          - prompt_section: test:colored_object
+            weight: 1.0
+        batch_variety: true
+        context_defaults: {}
+
+      themed_scenes:
+        name: Themed Scenes
+        description: Rulebook with context defaults
+        entry_points:
+          - prompt_section: test:colored_object
+            weight: 3.0
+          - prompt_section: test:object_location
+            weight: 2.0
+        batch_variety: false
+        context_defaults:
+          theme: "nature"
+          mood: "peaceful"
+          global:time: "sunset"
+
+    separator_sets: {}
+    rules: {}
+    decisions: []
+
+dependencies: []
+
