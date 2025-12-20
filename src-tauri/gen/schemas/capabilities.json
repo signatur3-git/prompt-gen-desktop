@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"Default permissions for RPG Desktop","local":true,"windows":["main"],"permissions":["dialog:default","dialog:allow-open","fs:default","fs:allow-read-file","fs:allow-write-file","core:default"]}}

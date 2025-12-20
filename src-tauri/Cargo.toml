@@ -1,0 +1,32 @@
+[package]
+name = "rpg-desktop"
+version = "0.1.0"
+description = "Random Prompt Generator - Reference Implementation"
+authors = ["RPG Spec Team"]
+edition = "2021"
+default-run = "rpg-desktop"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+thiserror = "1.0"
+tauri = { version = ">=2.0.0, <3.0.0", features = [] }
+tauri-plugin-dialog = { version = ">=2.0.0, <3.0.0" }
+tauri-plugin-fs = { version = ">=2.0.0, <3.0.0" }
+clap = { version = "4.4", features = ["derive"] }
+colored = "2.1"
+
+[build-dependencies]
+tauri-build = { version = ">=2.0.0, <3.0.0", features = [] }
+
+# Desktop app binary
+[[bin]]
+name = "rpg-desktop"
+path = "src/main.rs"
+
+# CLI tool binary
+[[bin]]
+name = "rpg-cli"
+path = "src/cli.rs"
+

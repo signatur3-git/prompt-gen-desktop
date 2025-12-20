@@ -1,0 +1,39 @@
+{
+  "name": "rpg-desktop",
+  "version": "1.1.0-dev",
+  "description": "Random Prompt Generator - Desktop Application",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri:dev": "cargo tauri dev",
+    "tauri:build": "cargo tauri build",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --watch",
+    "test:quick": "vitest run --reporter=dot",
+    "test:all": "npm run test:run && cd src-tauri && cargo test",
+    "hooks:install": "node scripts/install-hooks.js",
+    "precommit": "npm run test:run"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-fs": "^2.0.0",
+    "vue": "^3.3.11",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "@vue/test-utils": "^2.4.6",
+    "@vue/tsconfig": "^0.5.0",
+    "happy-dom": "^20.0.11",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10",
+    "vitest": "^4.0.16",
+    "vue-tsc": "^1.8.26"
+  }
+}
