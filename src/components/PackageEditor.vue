@@ -247,7 +247,7 @@ import RulebookEditor from './RulebookEditor.vue'
 import PackageMetadataEditor from './PackageMetadataEditor.vue'
 
 // App version constant
-const APP_VERSION = '1.1.0-dev'
+const APP_VERSION = '1.0.0'
 
 // State
 const currentPackage = ref(null)

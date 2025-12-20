@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import PackageEditor from './components/PackageEditor.vue'
 
 const appName = 'RPG Desktop'
-const version = 'Internal v1.1.0-dev (M9: Rulebooks)'
+const version = 'v1.0.0'
 </script>
 
 <template>

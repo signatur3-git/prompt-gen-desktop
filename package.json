@@ -1,6 +1,6 @@
 {
   "name": "rpg-desktop",
-  "version": "1.1.0-dev",
+  "version": "1.0.0",
   "description": "Random Prompt Generator - Desktop Application",
   "type": "module",
   "scripts": {
