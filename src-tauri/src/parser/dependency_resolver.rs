@@ -73,13 +73,13 @@ impl DependencyResolver {
 
             // Validate version match (exact only!)
             validate_exact_match(&dep_package.version, &dep.version)
-                .map_err(|e| DependencyError::VersionMismatch {
+                .map_err(|e| DependencyError::VersionMismatch(Box::new(VersionMismatchData {
                     package_id: dep.package_id.clone(),
                     required: dep.version.clone(),
                     found: dep_package.version.clone(),
                     path: self.resolve_path(dep, base_path),
                     details: e.to_string(),
-                })?;
+                })))?;
 
             // Store in resolved map
             resolved.insert(dep.package_id.clone(), dep_package);
@@ -235,13 +235,8 @@ pub enum DependencyError {
     },
 
     /// Version mismatch (exact version required)
-    VersionMismatch {
-        package_id: String,
-        required: String,
-        found: String,
-        path: Option<PathBuf>,
-        details: String,
-    },
+    /// Boxed to reduce Result size (clippy::result_large_err)
+    VersionMismatch(Box<VersionMismatchData>),
 
     /// Package ID doesn't match expected
     PackageIdMismatch {
@@ -254,6 +249,16 @@ pub enum DependencyError {
     CircularDependency {
         cycle: String,
     },
+}
+
+/// Data for version mismatch errors (boxed to reduce size)
+#[derive(Debug, Clone)]
+pub struct VersionMismatchData {
+    pub package_id: String,
+    pub required: String,
+    pub found: String,
+    pub path: Option<PathBuf>,
+    pub details: String,
 }
 
 impl std::fmt::Display for DependencyError {
@@ -274,16 +279,16 @@ impl std::fmt::Display for DependencyError {
                 writeln!(f, "  Error: {}", reason)
             }
 
-            DependencyError::VersionMismatch { package_id, required, found, path, details } => {
-                writeln!(f, "Version mismatch for dependency: {}", package_id)?;
-                writeln!(f, "  Required: {} (exact)", required)?;
-                writeln!(f, "  Found: {}", found)?;
-                if let Some(p) = path {
+            DependencyError::VersionMismatch(data) => {
+                writeln!(f, "Version mismatch for dependency: {}", data.package_id)?;
+                writeln!(f, "  Required: {} (exact)", data.required)?;
+                writeln!(f, "  Found: {}", data.found)?;
+                if let Some(p) = &data.path {
                     writeln!(f, "  Location: {}", p.display())?;
                 }
-                writeln!(f, "\n{}", details)?;
+                writeln!(f, "\n{}", data.details)?;
                 writeln!(f, "\nSuggestion: Update {} to version {} or change dependency to version: \"{}\"",
-                    package_id, required, found)
+                    data.package_id, data.required, data.found)
             }
 
             DependencyError::PackageIdMismatch { expected, found, path } => {
