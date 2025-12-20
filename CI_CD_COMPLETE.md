@@ -2,7 +2,7 @@
 
 ## Status: ✅ ALL ISSUES RESOLVED
 
-All 9 issues that were preventing the GitHub Actions workflow from completing have been identified and fixed.
+All 11 issues that were preventing the GitHub Actions workflow from completing have been identified and fixed.
 
 ---
 
@@ -90,6 +90,22 @@ All 9 issues that were preventing the GitHub Actions workflow from completing ha
 - **Unwrap or default**: Replaced `.or_insert_with(HashSet::new)` with `.or_default()` (3 locations)
 
 **Result**: All clippy warnings eliminated, code quality improved
+
+### 11. ✅ Dead Code and Unused Imports
+**Error**: 8 dead code warnings and 1 unused import with `-D warnings` flag
+
+**Issues Fixed**:
+- **Unused import**: Removed `RenderResult` from `renderer/mod.rs` exports (not used externally)
+- **Dead code warnings**: Added `#[allow(dead_code)]` to 7 public API items:
+  - `ParserError::DependencyNotFound` - Error variant for dependency resolution
+  - `LoadedPackage` struct - Used for loading packages with dependencies
+  - `load_package_with_dependencies()` - API function for dependency loading
+  - `PackageValidator::validate()` - Public validation function
+  - `SeededRandom::weighted_choice_f64()` - Used for rulebook entry point selection
+  - `Renderer::new()` - Constructor for renderer without dependencies
+  - `Renderer::render_from_rulebook()` and related methods - Rulebook rendering API (5 methods)
+
+**Rationale**: These are legitimate public API items that aren't currently used in the codebase but are part of the public interface. Rather than removing them, they're marked with `#[allow(dead_code)]` to preserve the API.
 
 ---
 
