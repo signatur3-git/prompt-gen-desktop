@@ -11,6 +11,7 @@ The "Test Rust" GitHub Actions workflow was failing because:
 5. **Cargo.lock was ignored** in .gitignore, preventing reproducible builds
 6. **Empty workflow files** (`pr-check.yml` and `release.yml`) caused "No event triggers defined in `on`" error
 7. **Package conflict** on Ubuntu 22.04: `libappindicator3-dev` conflicts with `libayatana-appindicator3-dev`
+8. **Missing icon.png**: Tauri requires `icon.png` for Linux builds, but only `icon.ico` existed
 
 ## Solutions Applied
 
@@ -91,6 +92,25 @@ This fixes both the `gdk-sys`/`glib-sys` build errors and the package conflict.
 - Empty workflow files cause GitHub Actions error: "No event triggers defined in `on`"
 - **Solution**: Deleted the empty files
 - Note: These workflows can be re-added later when needed with proper content
+
+### 7. Added Missing Icon File
+**File**: `src-tauri/icons/icon.png` (new)
+
+**Error encountered:**
+```
+error: proc macro panicked
+  --> src/main.rs:33:14
+   |
+33 |         .run(tauri::generate_context!())
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: message: failed to open icon /home/runner/work/prompt-gen-desktop/prompt-gen-desktop/src-tauri/icons/icon.png: No such file or directory (os error 2)
+```
+
+**Solution:** 
+- Generated `icon.png` from existing `icon.ico` using ImageMagick: `magick convert icon.ico icon.png`
+- Tauri requires PNG format icons for Linux builds
+- Windows can use .ico, but Linux/macOS need .png
 
 ## Test Results
 - ✅ **All 129 tests now pass successfully** (including 3 re-enabled invalid package tests)
