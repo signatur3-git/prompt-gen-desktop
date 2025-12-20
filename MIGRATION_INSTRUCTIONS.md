@@ -682,6 +682,62 @@ After completing each phase, report back with:
 
 ## Troubleshooting
 
+### Rulebooks Not Showing After Loading Package
+
+**Symptom:** After loading a YAML package file, rulebooks are not displayed in the UI even though they exist in the file.
+
+**Possible Causes:**
+
+1. **Package doesn't contain rulebooks** - Many older package files (pre-M9) don't have rulebooks yet
+2. **Wrong structure** - Rulebooks must be under `namespaces.<namespace_id>.rulebooks` as a HashMap/object
+3. **Array vs HashMap** - Rulebooks must be a HashMap (object with keys), not an array
+
+**How to Check:**
+
+Open your YAML file and verify the structure matches this:
+```yaml
+namespaces:
+  your_namespace:
+    # ... other content ...
+    rulebooks:          # Must be an object, not array
+      rulebook_id:      # The key is the rulebook ID
+        name: "My Rulebook"
+        description: "Description"
+        entry_points:
+          - prompt_section: "namespace:section_name"
+            weight: 1.0
+        batch_variety: false
+        context_defaults: {}
+```
+
+**Wrong structure (array):**
+```yaml
+rulebooks:           # ❌ At package level
+  - name: "My Rulebook"
+    # ...
+```
+
+**Correct structure (HashMap in namespace):**
+```yaml
+namespaces:
+  main:
+    rulebooks:       # ✅ Inside namespace
+      my_rulebook:   # ✅ Key-value pairs
+        name: "My Rulebook"
+        # ...
+```
+
+**To test:**
+- Load `test-packages-for-comparison/rulebook-test.yaml` from your installation
+- This file has correct rulebook structure
+- If this shows rulebooks but your file doesn't, compare the structures
+
+**Fix:**
+1. Open your YAML file in a text editor
+2. Ensure rulebooks are inside each namespace object (not at package root)
+3. Ensure rulebooks is an object with named keys, not an array
+4. Save and reload in the application
+
 ### Open Package Button Does Nothing
 
 **Symptom:** Clicking "Open Package" in production build doesn't show file dialog
