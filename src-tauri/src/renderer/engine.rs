@@ -63,6 +63,7 @@ pub struct Renderer<'a> {
 
 impl<'a> Renderer<'a> {
     /// Create a new renderer without dependencies
+    #[allow(dead_code)] // Part of public API
     pub fn new(package: &'a Package, seed: u64) -> Self {
         Renderer {
             package,
@@ -599,6 +600,7 @@ impl<'a> Renderer<'a> {
     /// optionally applies context defaults, then renders the selected promptsection.
     ///
     /// Reference format: "rulebook" or "namespace:rulebook"
+    #[allow(dead_code)] // Part of public API for rulebook rendering
     pub fn render_from_rulebook(&self, rulebook_ref: &str) -> Result<RenderResult> {
         self.render_from_rulebook_with_options(rulebook_ref, None)
     }
@@ -609,6 +611,7 @@ impl<'a> Renderer<'a> {
     /// will try to avoid using the same entry point twice.
     ///
     /// Context defaults from the rulebook are applied before rendering.
+    #[allow(dead_code)] // Part of public API for rulebook rendering with options
     pub fn render_from_rulebook_with_options(
         &self,
         rulebook_ref: &str,
@@ -642,6 +645,7 @@ impl<'a> Renderer<'a> {
     ///
     /// If batch_variety is enabled and used_entry_points is provided,
     /// will try to select an unused entry point.
+    #[allow(dead_code)] // Used internally by rulebook rendering
     fn select_entry_point(
         &self,
         rulebook: &crate::core::rulebook::Rulebook,
@@ -689,6 +693,7 @@ impl<'a> Renderer<'a> {
     }
 
     /// Find a rulebook by reference
+    #[allow(dead_code)] // Used internally by rulebook rendering
     fn find_rulebook(&self, namespace: &str, name: &str) -> Result<&crate::core::rulebook::Rulebook> {
         let ns = self.package.namespaces
             .get(namespace)
@@ -701,6 +706,7 @@ impl<'a> Renderer<'a> {
 
     /// Parse a rulebook reference into namespace and name
     /// Format: "name" uses first namespace, "namespace:name" is explicit
+    #[allow(dead_code)] // Used internally by rulebook rendering
     fn parse_rulebook_reference(&self, reference: &str) -> Result<(String, String)> {
         if reference.contains(':') {
             let parts: Vec<&str> = reference.split(':').collect();

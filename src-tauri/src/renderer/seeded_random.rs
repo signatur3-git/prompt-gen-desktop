@@ -109,6 +109,7 @@ impl SeededRandom {
 
     /// M9: Select random index from weighted items (f64 version for rulebooks)
     /// Weights are normalized internally
+    #[allow(dead_code)] // Used for weighted rulebook entry point selection
     pub fn weighted_choice_f64(&mut self, weights: &[f64]) -> usize {
         if weights.is_empty() {
             panic!("Cannot choose from empty weights");

@@ -223,6 +223,7 @@ pub struct PackageValidator;
 
 impl PackageValidator {
     /// Validate a package (without dependencies)
+    #[allow(dead_code)] // Part of public API, used by external callers
     pub fn validate(package: &Package) -> ValidationResult {
         Self::validate_with_dependencies(package, &HashMap::new())
     }
