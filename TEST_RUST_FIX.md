@@ -9,6 +9,7 @@ The "Test Rust" GitHub Actions workflow was failing because:
    - `failed to run custom build command for gdk-sys v0.18.2`
    - `failed to run custom build command for glib-sys v0.18.1`
 5. **Cargo.lock was ignored** in .gitignore, preventing reproducible builds
+6. **Empty workflow files** (`pr-check.yml` and `release.yml`) caused "No event triggers defined in `on`" error
 
 ## Solutions Applied
 
@@ -70,6 +71,13 @@ Initially, the three "invalid" package tests were commented out because my place
 - Removed `/src-tauri/Cargo.lock` from .gitignore
 - Committed Cargo.lock to repository
 - This ensures reproducible builds across all environments (Cargo.lock should be committed for applications, not libraries)
+
+### 6. Removed Empty Workflow Files
+**Files**: `.github/workflows/pr-check.yml` and `.github/workflows/release.yml`
+- These files were empty (placeholders)
+- Empty workflow files cause GitHub Actions error: "No event triggers defined in `on`"
+- **Solution**: Deleted the empty files
+- Note: These workflows can be re-added later when needed with proper content
 
 ## Test Results
 - ✅ **All 129 tests now pass successfully** (including 3 re-enabled invalid package tests)
