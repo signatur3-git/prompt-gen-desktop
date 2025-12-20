@@ -20,6 +20,11 @@ colored = "2.1"
 [build-dependencies]
 tauri-build = { version = ">=2.0.0, <3.0.0", features = [] }
 
+# Library for shared code and tests
+[lib]
+name = "rpg_lib"
+path = "src/lib.rs"
+
 # Desktop app binary
 [[bin]]
 name = "rpg-desktop"

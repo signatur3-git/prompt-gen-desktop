@@ -1,20 +1,26 @@
+id: test.min-max-reversed
+version: 1.0.0
+
 metadata:
   name: min-max-reversed
   version: 1.0.0
-  author: Test
+  authors: [Test]
   description: Invalid package with min > max
 
 namespaces:
   main:
+    id: main
     datatypes:
       colors:
+        name: colors
         values:
-          - red
-          - blue
-          - green
+          - text: red
+          - text: blue
+          - text: green
 
     promptsections:
       item:
+        name: item
         template: "{colors}"
         references:
           colors:

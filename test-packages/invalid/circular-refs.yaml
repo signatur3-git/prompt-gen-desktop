@@ -1,19 +1,25 @@
+id: test.circular-refs
+version: 1.0.0
+
 metadata:
   name: circular-refs
   version: 1.0.0
-  author: Test
+  authors: [Test]
   description: Invalid package with circular references
 
 namespaces:
   main:
+    id: main
     datatypes:
       colors:
+        name: colors
         values:
-          - red
-          - blue
+          - text: red
+          - text: blue
 
     promptsections:
       scene1:
+        name: scene1
         template: "Scene 1 with {scene2_ref}"
         references:
           scene2_ref:
@@ -22,6 +28,7 @@ namespaces:
             max: 1
 
       scene2:
+        name: scene2
         template: "Scene 2 with {scene1_ref}"
         references:
           scene1_ref:

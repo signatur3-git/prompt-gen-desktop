@@ -1,26 +1,32 @@
+id: test.lists-test
+version: 1.0.0
+
 metadata:
   name: lists-test
   version: 1.0.0
-  author: Test
+  authors: [Test]
   description: Test package for lists
 
 namespaces:
   main:
+    id: main
     datatypes:
       colors:
+        name: colors
         values:
-          - red
-          - blue
-          - green
-          - yellow
-          - purple
+          - text: red
+          - text: blue
+          - text: green
+          - text: yellow
+          - text: purple
 
       adjectives:
+        name: adjectives
         values:
-          - big
-          - small
-          - bright
-          - dark
+          - text: big
+          - text: small
+          - text: bright
+          - text: dark
 
     separatorsets:
       comma_list:
@@ -30,6 +36,7 @@ namespaces:
 
     promptsections:
       color_list:
+        name: color_list
         template: "{colors}"
         references:
           colors:
@@ -39,6 +46,7 @@ namespaces:
             separator: "main:comma_list"
 
       item_description:
+        name: item_description
         template: "{adjectives} {colors} item"
         references:
           adjectives:

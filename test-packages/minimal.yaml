@@ -1,20 +1,26 @@
+id: test.minimal
+version: 1.0.0
+
 metadata:
   name: minimal
   version: 1.0.0
-  author: Test
+  authors: [Test]
   description: Minimal test package
 
 namespaces:
   main:
+    id: main
     datatypes:
       colors:
+        name: colors
         values:
-          - red
-          - blue
-          - green
+          - text: red
+          - text: blue
+          - text: green
 
     promptsections:
       item:
+        name: item
         template: "{color} item"
         references:
           color:

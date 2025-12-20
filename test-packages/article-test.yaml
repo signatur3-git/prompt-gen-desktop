@@ -1,36 +1,43 @@
+id: test.article-test
+version: 1.0.0
+
 metadata:
   name: article-test
   version: 1.0.0
-  author: Test
+  authors: [Test]
   description: Test package for articles
 
 namespaces:
   main:
+    id: main
     datatypes:
       articles:
+        name: articles
         values:
-          - value: "a"
+          - text: a
             tags:
               article: true
-          - value: "an"
+          - text: an
             tags:
               article: true
-          - value: "the"
+          - text: the
             tags:
               article: true
 
       nouns:
+        name: nouns
         values:
-          - value: "apple"
+          - text: apple
             tags:
               vowel_start: true
-          - value: "banana"
-          - value: "orange"
+          - text: banana
+          - text: orange
             tags:
               vowel_start: true
 
     promptsections:
       noun_phrase:
+        name: noun_phrase
         template: "{article} {noun}"
         references:
           article:

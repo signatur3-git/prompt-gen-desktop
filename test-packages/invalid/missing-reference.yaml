@@ -1,19 +1,25 @@
+id: test.missing-reference
+version: 1.0.0
+
 metadata:
   name: missing-reference
   version: 1.0.0
-  author: Test
+  authors: [Test]
   description: Invalid package with missing reference
 
 namespaces:
   main:
+    id: main
     datatypes:
       colors:
+        name: colors
         values:
-          - red
-          - blue
+          - text: red
+          - text: blue
 
     promptsections:
       item:
+        name: item
         template: "{color} {material} item"
         references:
           color:
