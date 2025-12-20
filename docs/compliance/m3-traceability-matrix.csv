@@ -1,0 +1,6 @@
+"Compliance Requirement","RFC Source","Evidence Artefact","Submission ID","Evidence Reference","Status","Notes"
+"Sanity check completion per package","RFC 0001 §6.2","AT-E05, CV-BAS-01","","","Pending","Populate after validator dry run"
+"Deterministic seed logged for reproducibility","RFC 0001 §4.3","AT-E05, CV-ADV-01","","","Pending","Await vault integration"
+"Marketplace publication attestation","RFC 0001 §8.1","CV-PREM-01","","","Not started","Monitoring export format to be confirmed"
+"Quarterly compliance review documented","RFC 0001 §8.2","CV-PREM-01","","","Not started","Capture governance council minutes"
+"Regression pack executed for regulated deployments","RFC 0001 §6.4","CV-ADV-01","","","Pending","Regression suite automation scheduled 2024-05-23"

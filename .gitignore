@@ -31,3 +31,5 @@ yarn-error.log*
 # Temp
 *.tmp
 *.temp
+/packages/
+/docs/
