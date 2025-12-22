@@ -1,4 +1,4 @@
-// M2: Foundation - Core Data Models
+﻿// M2: Foundation - Core Data Models
 // Based on M1 decisions (DEC-0001, DEC-0002, DEC-0003)
 
 use serde::{Deserialize, Serialize};
@@ -42,8 +42,7 @@ pub struct PackageMetadata {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Dependency {
     /// Package ID to depend on (e.g., "prompt-gen.common")
-    #[serde(alias = "package")]
-    pub package_id: String,
+    pub package: String,
 
     /// Exact version required (e.g., "1.0.0")
     /// Note: Semver ranges like "^1.0.0" or ">=1.0.0" are NOT supported.

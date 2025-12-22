@@ -1,0 +1,13 @@
+id: test.base
+version: 1.0.0
+metadata:
+  name: Test Base Package
+  description: Base package
+  authors: []
+namespaces:
+  base:
+    datatypes:
+      test:
+        values:
+          - text: value1
+dependencies: []  # Empty array, explicit

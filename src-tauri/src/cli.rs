@@ -1,4 +1,4 @@
-// M6 Phase 2: CLI Tool for Package Operations
+﻿// M6 Phase 2: CLI Tool for Package Operations
 // Beautiful terminal interface with helpful output
 
 use clap::{Parser, Subcommand};
@@ -99,7 +99,7 @@ fn validate_command(path: PathBuf, show_warnings: bool, verbose: bool) -> Result
 
     // M9 Phase 2.7: Load package with dependencies
     if verbose {
-        println!("{} Loading package with dependencies...", "→".bright_blue());
+        println!("{} Loading package with dependencies...", "â†’".bright_blue());
     }
 
     // Set up search paths for dependencies
@@ -114,9 +114,9 @@ fn validate_command(path: PathBuf, show_warnings: bool, verbose: bool) -> Result
     let (package, dependencies) = match resolver.load_package_with_deps(&path) {
         Ok((pkg, deps)) => {
             if verbose {
-                println!("{} Package loaded successfully", "✓".green());
+                println!("{} Package loaded successfully", "âœ“".green());
                 if !deps.is_empty() {
-                    println!("  {} Dependencies loaded: {}", "→".bright_blue(), deps.len());
+                    println!("  {} Dependencies loaded: {}", "â†’".bright_blue(), deps.len());
                     for (dep_id, dep_pkg) in &deps {
                         println!("    - {} v{}", dep_id.bright_yellow(), dep_pkg.version.bright_black());
                     }
@@ -125,7 +125,7 @@ fn validate_command(path: PathBuf, show_warnings: bool, verbose: bool) -> Result
             (pkg, deps)
         }
         Err(e) => {
-            println!("{} {}", "✗".red().bold(), "Failed to load package".red());
+            println!("{} {}", "âœ—".red().bold(), "Failed to load package".red());
             println!("  {}", format!("{}", e).bright_red());
             return Err(1);
         }
@@ -133,7 +133,7 @@ fn validate_command(path: PathBuf, show_warnings: bool, verbose: bool) -> Result
 
     // Run validation with dependencies
     if verbose {
-        println!("{} Running validation...", "→".bright_blue());
+        println!("{} Running validation...", "â†’".bright_blue());
     }
 
     let result = PackageValidator::validate_with_dependencies(&package, &dependencies);
@@ -143,7 +143,7 @@ fn validate_command(path: PathBuf, show_warnings: bool, verbose: bool) -> Result
     // Display results
     if result.is_valid() {
         // Success!
-        println!("{}", "✓ VALIDATION PASSED".green().bold());
+        println!("{}", "âœ“ VALIDATION PASSED".green().bold());
         println!();
 
         if show_warnings && result.has_warnings() {
@@ -151,7 +151,7 @@ fn validate_command(path: PathBuf, show_warnings: bool, verbose: bool) -> Result
         }
 
         // Summary
-        println!("{}", "─".repeat(60).bright_black());
+        println!("{}", "â”€".repeat(60).bright_black());
         println!("{} {}", "Result:".bright_cyan(), "VALID".green().bold());
 
         if result.has_warnings() {
@@ -160,12 +160,12 @@ fn validate_command(path: PathBuf, show_warnings: bool, verbose: bool) -> Result
             println!("{} {}", "Warnings:".bright_black(), "0".bright_black());
         }
 
-        println!("{}", "─".repeat(60).bright_black());
+        println!("{}", "â”€".repeat(60).bright_black());
 
         Ok(())
     } else {
         // Failed validation
-        println!("{}", "✗ VALIDATION FAILED".red().bold());
+        println!("{}", "âœ— VALIDATION FAILED".red().bold());
         println!();
 
         display_errors(&result.errors, verbose);
@@ -177,7 +177,7 @@ fn validate_command(path: PathBuf, show_warnings: bool, verbose: bool) -> Result
 
         // Summary
         println!();
-        println!("{}", "─".repeat(60).bright_black());
+        println!("{}", "â”€".repeat(60).bright_black());
         println!("{} {}", "Result:".bright_cyan(), "INVALID".red().bold());
         println!("{} {}", "Errors:".red(), result.errors.len());
 
@@ -185,7 +185,7 @@ fn validate_command(path: PathBuf, show_warnings: bool, verbose: bool) -> Result
             println!("{} {}", "Warnings:".yellow(), result.warnings.len());
         }
 
-        println!("{}", "─".repeat(60).bright_black());
+        println!("{}", "â”€".repeat(60).bright_black());
 
         Err(1)
     }
@@ -234,7 +234,7 @@ fn info_command(path: PathBuf) -> Result<(), i32> {
     let package = match load_package(&path) {
         Ok(pkg) => pkg,
         Err(e) => {
-            println!("{} {}", "✗".red().bold(), "Failed to load package".red());
+            println!("{} {}", "âœ—".red().bold(), "Failed to load package".red());
             println!("  {}", format!("{}", e).bright_red());
             return Err(1);
         }
@@ -259,11 +259,11 @@ fn info_command(path: PathBuf) -> Result<(), i32> {
 
     for (ns_id, namespace) in &package.namespaces {
         println!();
-        println!("  {} {}", "└─".bright_blue(), ns_id.bright_white().bold());
-        println!("     {} {} datatype(s)", "├─".bright_black(), namespace.datatypes.len());
-        println!("     {} {} promptsection(s)", "├─".bright_black(), namespace.prompt_sections.len());
-        println!("     {} {} separator set(s)", "├─".bright_black(), namespace.separator_sets.len());
-        println!("     {} {} rule(s)", "└─".bright_black(), namespace.rules.len());
+        println!("  {} {}", "â””â”€".bright_blue(), ns_id.bright_white().bold());
+        println!("     {} {} datatype(s)", "â”œâ”€".bright_black(), namespace.datatypes.len());
+        println!("     {} {} promptsection(s)", "â”œâ”€".bright_black(), namespace.prompt_sections.len());
+        println!("     {} {} separator set(s)", "â”œâ”€".bright_black(), namespace.separator_sets.len());
+        println!("     {} {} rule(s)", "â””â”€".bright_black(), namespace.rules.len());
     }
 
     println!();
@@ -271,12 +271,12 @@ fn info_command(path: PathBuf) -> Result<(), i32> {
 
     if !package.dependencies.is_empty() {
         for dep in &package.dependencies {
-            println!("  {} {} (v{})", "└─".bright_blue(), dep.package_id, dep.version);
+            println!("  {} {} (v{})", "â””â”€".bright_blue(), dep.package, dep.version);
         }
     }
 
     println!();
-    println!("{}", "─".repeat(60).bright_black());
+    println!("{}", "â”€".repeat(60).bright_black());
 
     Ok(())
 }
@@ -292,18 +292,18 @@ fn render_command(path: PathBuf, section: String, seed: u64, count: usize) -> Re
     println!();
 
     // M8.5 Blocker 2 Phase 2: Load package with dependencies
-    println!("{} Loading package from {}", "→".bright_blue(), path.display());
+    println!("{} Loading package from {}", "â†’".bright_blue(), path.display());
 
     let loaded = match load_package_with_dependencies(&path) {
         Ok(loaded) => {
-            println!("{} Package loaded", "✓".green());
+            println!("{} Package loaded", "âœ“".green());
             if !loaded.dependencies.is_empty() {
-                println!("{} {} dependencies loaded", "✓".green(), loaded.dependencies.len());
+                println!("{} {} dependencies loaded", "âœ“".green(), loaded.dependencies.len());
             }
             loaded
         }
         Err(e) => {
-            println!("{} {}", "✗".red().bold(), "Failed to load package".red());
+            println!("{} {}", "âœ—".red().bold(), "Failed to load package".red());
             println!("  {}", format!("{}", e).bright_red());
             return Err(1);
         }
@@ -318,7 +318,7 @@ fn render_command(path: PathBuf, section: String, seed: u64, count: usize) -> Re
         if count > 1 {
             println!("{} {} (Seed: {})",
                 format!("#{}", i + 1).bright_blue().bold(),
-                "─".repeat(54).bright_black(),
+                "â”€".repeat(54).bright_black(),
                 current_seed.to_string().bright_black());
         } else {
             println!("{} {}", "Seed:".bright_cyan(), current_seed);
@@ -334,13 +334,13 @@ fn render_command(path: PathBuf, section: String, seed: u64, count: usize) -> Re
                 println!();
 
                 if count == 1 {
-                    println!("{}", "─".repeat(60).bright_black());
+                    println!("{}", "â”€".repeat(60).bright_black());
                     println!("{} {:.2}ms", "Render time:".bright_cyan(), 0.0); // TODO: actual timing
                 }
             }
             Err(e) => {
                 println!();
-                println!("  {} {}", "✗".red().bold(), format!("Render error: {}", e).red());
+                println!("  {} {}", "âœ—".red().bold(), format!("Render error: {}", e).red());
                 println!();
                 return Err(1);
             }
@@ -353,9 +353,9 @@ fn render_command(path: PathBuf, section: String, seed: u64, count: usize) -> Re
 
     if count > 1 {
         println!();
-        println!("{}", "─".repeat(60).bright_black());
+        println!("{}", "â”€".repeat(60).bright_black());
         println!("{} {}", "Total:".bright_cyan(), format!("{} prompts rendered", count).bright_white());
-        println!("{}", "─".repeat(60).bright_black());
+        println!("{}", "â”€".repeat(60).bright_black());
     }
 
     Ok(())

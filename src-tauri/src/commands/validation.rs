@@ -1,4 +1,4 @@
-// M7 Phase 3: Validation Commands
+﻿// M7 Phase 3: Validation Commands
 
 use crate::core::models::Package;
 use crate::validator::{PackageValidator, ValidationError};
@@ -85,21 +85,21 @@ impl From<ValidationError> for ErrorInfo {
                 location: Some(name.clone()),
                 suggestion: Some("Use lowercase alphanumeric with underscores/hyphens".to_string()),
             },
-            ValidationError::InvalidDependency { package_id, reason } => ErrorInfo {
-                message: format!("Invalid dependency '{}': {}", package_id, reason),
-                location: Some(format!("dependencies.{}", package_id)),
+            ValidationError::InvalidDependency { package, reason } => ErrorInfo {
+                message: format!("Invalid dependency '{}': {}", package, reason),
+                location: Some(format!("dependencies.{}", package)),
                 suggestion: Some("Check dependency declaration".to_string()),
             },
             ValidationError::InvalidDependencyVersion {
-                package_id,
+                package,
                 version,
                 reason,
             } => ErrorInfo {
                 message: format!(
                     "Invalid version '{}' for dependency '{}': {}",
-                    version, package_id, reason
+                    version, package, reason
                 ),
-                location: Some(format!("dependencies.{}", package_id)),
+                location: Some(format!("dependencies.{}", package)),
                 suggestion: Some("Use semver format (e.g., 1.0.0)".to_string()),
             },
         }
@@ -151,4 +151,5 @@ pub async fn validate_package_with_dependencies(
         })
     }
 }
+
 

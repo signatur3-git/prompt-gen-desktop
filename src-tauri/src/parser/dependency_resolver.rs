@@ -1,4 +1,4 @@
-// M9 Phase 2.2: Dependency Resolution
+﻿// M9 Phase 2.2: Dependency Resolution
 //
 // Handles loading packages with their dependencies, with cycle detection and caching.
 
@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 
 /// Resolves and loads package dependencies
 pub struct DependencyResolver {
-    /// Cache of loaded packages (key: package_id)
+    /// Cache of loaded packages (key: package)
     cache: HashMap<String, Package>,
 
     /// Paths to search for packages
@@ -38,7 +38,7 @@ impl DependencyResolver {
         // Load main package
         let package = package_loader::load_package(path)
             .map_err(|e| DependencyError::LoadError {
-                package_id: path.display().to_string(),
+                package: path.display().to_string(),
                 path: path.to_path_buf(),
                 reason: e.to_string(),
             })?;
@@ -74,7 +74,7 @@ impl DependencyResolver {
             // Validate version match (exact only!)
             validate_exact_match(&dep_package.version, &dep.version)
                 .map_err(|e| DependencyError::VersionMismatch(Box::new(VersionMismatchData {
-                    package_id: dep.package_id.clone(),
+                    package: dep.package.clone(),
                     required: dep.version.clone(),
                     found: dep_package.version.clone(),
                     path: self.resolve_path(dep, base_path),
@@ -82,7 +82,7 @@ impl DependencyResolver {
                 })))?;
 
             // Store in resolved map
-            resolved.insert(dep.package_id.clone(), dep_package);
+            resolved.insert(dep.package.clone(), dep_package);
         }
 
         // Done loading this package
@@ -98,7 +98,7 @@ impl DependencyResolver {
         base_path: Option<&Path>,
     ) -> Result<Package, DependencyError> {
         // Check cache first
-        if let Some(cached) = self.cache.get(&dep.package_id) {
+        if let Some(cached) = self.cache.get(&dep.package) {
             return Ok(cached.clone());
         }
 
@@ -108,22 +108,22 @@ impl DependencyResolver {
         // Load package
         let package = package_loader::load_package(&dep_path)
             .map_err(|e| DependencyError::LoadError {
-                package_id: dep.package_id.clone(),
+                package: dep.package.clone(),
                 path: dep_path.clone(),
                 reason: e.to_string(),
             })?;
 
         // Validate package ID matches
-        if package.id != dep.package_id {
+        if package.id != dep.package {
             return Err(DependencyError::PackageIdMismatch {
-                expected: dep.package_id.clone(),
+                expected: dep.package.clone(),
                 found: package.id.clone(),
                 path: dep_path,
             });
         }
 
         // Cache it
-        self.cache.insert(dep.package_id.clone(), package.clone());
+        self.cache.insert(dep.package.clone(), package.clone());
 
         // Recursively resolve its dependencies
         let _sub_deps = self.resolve_dependencies(&package, dep_path.parent())?;
@@ -162,7 +162,7 @@ impl DependencyResolver {
 
         // Search in search_paths
         for search_path in &self.search_paths {
-            let candidate = search_path.join(format!("{}.yaml", dep.package_id.replace('.', "-")));
+            let candidate = search_path.join(format!("{}.yaml", dep.package.replace('.', "-")));
             if candidate.exists() {
                 return Ok(candidate);
             }
@@ -170,7 +170,7 @@ impl DependencyResolver {
 
         // Not found
         Err(DependencyError::NotFound {
-            package_id: dep.package_id.clone(),
+            package: dep.package.clone(),
             searched_paths: self.format_searched_paths(dep, base_path),
         })
     }
@@ -210,7 +210,7 @@ impl DependencyResolver {
 
         // Search paths
         for search_path in &self.search_paths {
-            let candidate = search_path.join(format!("{}.yaml", dep.package_id.replace('.', "-")));
+            let candidate = search_path.join(format!("{}.yaml", dep.package.replace('.', "-")));
             paths.push(candidate.display().to_string());
         }
 
@@ -223,13 +223,13 @@ impl DependencyResolver {
 pub enum DependencyError {
     /// Package not found
     NotFound {
-        package_id: String,
+        package: String,
         searched_paths: Vec<String>,
     },
 
     /// Failed to load package
     LoadError {
-        package_id: String,
+        package: String,
         path: PathBuf,
         reason: String,
     },
@@ -254,7 +254,7 @@ pub enum DependencyError {
 /// Data for version mismatch errors (boxed to reduce size)
 #[derive(Debug, Clone)]
 pub struct VersionMismatchData {
-    pub package_id: String,
+    pub package: String,
     pub required: String,
     pub found: String,
     pub path: Option<PathBuf>,
@@ -264,8 +264,8 @@ pub struct VersionMismatchData {
 impl std::fmt::Display for DependencyError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DependencyError::NotFound { package_id, searched_paths } => {
-                writeln!(f, "Dependency not found: {}", package_id)?;
+            DependencyError::NotFound { package, searched_paths } => {
+                writeln!(f, "Dependency not found: {}", package)?;
                 writeln!(f, "\nSearched paths:")?;
                 for path in searched_paths {
                     writeln!(f, "  - {}", path)?;
@@ -273,14 +273,14 @@ impl std::fmt::Display for DependencyError {
                 writeln!(f, "\nSuggestion: Check the 'path' field or install the package")
             }
 
-            DependencyError::LoadError { package_id, path, reason } => {
-                writeln!(f, "Failed to load dependency: {}", package_id)?;
+            DependencyError::LoadError { package, path, reason } => {
+                writeln!(f, "Failed to load dependency: {}", package)?;
                 writeln!(f, "  Path: {}", path.display())?;
                 writeln!(f, "  Error: {}", reason)
             }
 
             DependencyError::VersionMismatch(data) => {
-                writeln!(f, "Version mismatch for dependency: {}", data.package_id)?;
+                writeln!(f, "Version mismatch for dependency: {}", data.package)?;
                 writeln!(f, "  Required: {} (exact)", data.required)?;
                 writeln!(f, "  Found: {}", data.found)?;
                 if let Some(p) = &data.path {
@@ -288,7 +288,7 @@ impl std::fmt::Display for DependencyError {
                 }
                 writeln!(f, "\n{}", data.details)?;
                 writeln!(f, "\nSuggestion: Update {} to version {} or change dependency to version: \"{}\"",
-                    data.package_id, data.required, data.found)
+                    data.package, data.required, data.found)
             }
 
             DependencyError::PackageIdMismatch { expected, found, path } => {
@@ -343,7 +343,7 @@ mod tests {
         ]);
 
         let dep = Dependency {
-            package_id: "test.package".to_string(),
+            package: "test.package".to_string(),
             version: "1.0.0".to_string(),
             path: Some("./local.yaml".to_string()),
         };
@@ -353,4 +353,5 @@ mod tests {
         assert!(paths.iter().any(|p| p.contains("local.yaml")));
     }
 }
+
 

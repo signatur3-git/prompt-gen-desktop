@@ -1,0 +1,15 @@
+id: test.dependent
+version: 1.0.0
+metadata:
+  name: Test Dependent Package
+  description: Depends on base
+  authors: []
+dependencies:
+  - package_id: test.base
+    version: "1.0.0"
+namespaces:
+  main:
+    datatypes:
+      test:
+        values:
+          - text: value2

@@ -1,4 +1,4 @@
-// M6 Phase 1: Package Validator
+﻿// M6 Phase 1: Package Validator
 // Comprehensive validation with helpful error messages
 
 use crate::core::models::Package;
@@ -56,12 +56,12 @@ pub enum ValidationError {
     InvalidNaming { name: String, reason: String },
 
     // M9 Phase 2.4: Dependency validation errors
-    #[error("Invalid dependency: package '{package_id}' - {reason}")]
-    InvalidDependency { package_id: String, reason: String },
+    #[error("Invalid dependency: package '{package}' - {reason}")]
+    InvalidDependency { package: String, reason: String },
 
-    #[error("Invalid version format: '{version}' in dependency '{package_id}' - {reason}")]
+    #[error("Invalid version format: '{version}' in dependency '{package}' - {reason}")]
     InvalidDependencyVersion {
-        package_id: String,
+        package: String,
         version: String,
         reason: String,
     },
@@ -97,12 +97,12 @@ pub enum ValidationWarning {
     },
     // M9 Phase 3: Dependency warnings
     MajorVersionRange {
-        package_id: String,
+        package: String,
         version: String,
         suggestion: String,
     },
     FlexibleDependency {
-        package_id: String,
+        package: String,
         version: String,
         info: String,
     },
@@ -152,22 +152,22 @@ impl std::fmt::Display for ValidationWarning {
                 write!(f, "Missing description for '{}'", component)
             }
             ValidationWarning::MajorVersionRange {
-                package_id,
+                package,
                 version,
                 suggestion,
             } => write!(
                 f,
                 "Dependency '{}' uses major version range ({}). {}",
-                package_id, version, suggestion
+                package, version, suggestion
             ),
             ValidationWarning::FlexibleDependency {
-                package_id,
+                package,
                 version,
                 info,
             } => write!(
                 f,
                 "Dependency '{}' uses flexible version ({}). {}",
-                package_id, version, info
+                package, version, info
             ),
         }
     }
@@ -548,7 +548,7 @@ impl PackageValidator {
 
                 if let Some(chain) = Self::find_circular_ref(package, &full_name, &mut visited) {
                     result.add_error(ValidationError::CircularReference {
-                        chain: chain.join(" → "),
+                        chain: chain.join(" â†’ "),
                     });
                 }
             }
@@ -800,18 +800,18 @@ impl PackageValidator {
     fn validate_dependencies(package: &Package, result: &mut ValidationResult) {
         for dep in &package.dependencies {
             // Validate package ID format
-            if dep.package_id.is_empty() {
+            if dep.package.is_empty() {
                 result.add_error(ValidationError::InvalidDependency {
-                    package_id: dep.package_id.clone(),
+                    package: dep.package.clone(),
                     reason: "Package ID cannot be empty".to_string(),
                 });
                 continue;
             }
 
             // Validate package ID doesn't reference itself
-            if dep.package_id == package.id {
+            if dep.package == package.id {
                 result.add_error(ValidationError::InvalidDependency {
-                    package_id: dep.package_id.clone(),
+                    package: dep.package.clone(),
                     reason: "Package cannot depend on itself".to_string(),
                 });
             }
@@ -819,7 +819,7 @@ impl PackageValidator {
             // M9 Phase 3: Validate semver format (accepts flexible or exact)
             if !Self::is_valid_semver(&dep.version) {
                 result.add_error(ValidationError::InvalidDependencyVersion {
-                    package_id: dep.package_id.clone(),
+                    package: dep.package.clone(),
                     version: dep.version.clone(),
                     reason: "Invalid semver format. Examples: 1.0.0, ^1.0.0, ~1.2.0, >=1.0.0".to_string(),
                 });
@@ -829,7 +829,7 @@ impl PackageValidator {
             // M9 Phase 3: Warn about major version ranges (potentially breaking)
             if Self::is_major_version_range(&dep.version) {
                 result.add_warning(ValidationWarning::MajorVersionRange {
-                    package_id: dep.package_id.clone(),
+                    package: dep.package.clone(),
                     version: dep.version.clone(),
                     suggestion: "This may introduce breaking changes. Consider using tilde (~) for safer patch updates.".to_string(),
                 });
@@ -838,7 +838,7 @@ impl PackageValidator {
             // M9 Phase 3: Info about flexible versions
             if Self::is_flexible_version(&dep.version) {
                 result.add_warning(ValidationWarning::FlexibleDependency {
-                    package_id: dep.package_id.clone(),
+                    package: dep.package.clone(),
                     version: dep.version.clone(),
                     info: "Latest matching version will be used during development. Users can pin to exact versions for deterministic output.".to_string(),
                 });
@@ -848,7 +848,7 @@ impl PackageValidator {
             if let Some(path) = &dep.path {
                 if path.is_empty() {
                     result.add_error(ValidationError::InvalidDependency {
-                        package_id: dep.package_id.clone(),
+                        package: dep.package.clone(),
                         reason: "Path cannot be empty string (omit field instead)".to_string(),
                     });
                 }
@@ -859,9 +859,9 @@ impl PackageValidator {
         use std::collections::HashSet;
         let mut seen = HashSet::new();
         for dep in &package.dependencies {
-            if !seen.insert(&dep.package_id) {
+            if !seen.insert(&dep.package) {
                 result.add_error(ValidationError::InvalidDependency {
-                    package_id: dep.package_id.clone(),
+                    package: dep.package.clone(),
                     reason: "Duplicate dependency declaration".to_string(),
                 });
             }
@@ -1590,4 +1590,5 @@ mod tests {
         )));
     }
 }
+
 

@@ -10,24 +10,27 @@ impl SeparatorSet {
     /// - 0 items: ""
     /// - 1 item: "red"
     /// - 2 items: "red and blue" (using secondary)
-    /// - 3+ items: "red, blue and green" (using primary + secondary)
+    /// - 3+ items: "red, blue and green" (using primary + secondary/tertiary)
+    /// - 3+ items with tertiary: "red, blue, and green" (Oxford comma)
     pub fn format(&self, items: &[String]) -> String {
         match items.len() {
             0 => String::new(),
             1 => items[0].clone(),
             2 => {
-                // Use secondary separator for just two items
+                // Use secondary separator for exactly two items
                 // Example: "red and blue"
                 format!("{}{}{}", items[0], self.secondary, items[1])
             }
             _ => {
-                // Use primary for all but last, then secondary before last
-                // Example: "red, blue and green"
+                // Use primary for all but last, then tertiary (if defined) or secondary before last
+                // Example: "red, blue and green" or "red, blue, and green" (Oxford comma)
                 let all_but_last = &items[0..items.len() - 1];
                 let last = &items[items.len() - 1];
 
                 let mut result = all_but_last.join(&self.primary);
-                result.push_str(&self.secondary);
+                // Use tertiary if defined, otherwise fall back to secondary
+                let final_sep = self.tertiary.as_ref().unwrap_or(&self.secondary);
+                result.push_str(final_sep);
                 result.push_str(last);
                 result
             }
@@ -54,6 +57,15 @@ mod tests {
             primary: "; ".to_string(),
             secondary: " or ".to_string(),
             tertiary: None,
+        }
+    }
+
+    fn oxford_comma() -> SeparatorSet {
+        SeparatorSet {
+            name: "oxford_comma".to_string(),
+            primary: ", ".to_string(),
+            secondary: " and ".to_string(),
+            tertiary: Some(", and ".to_string()),
         }
     }
 
@@ -107,6 +119,41 @@ mod tests {
         assert_eq!(
             sep.format(&["a".to_string(), "b".to_string(), "c".to_string()]),
             "a; b or c"
+        );
+    }
+
+    #[test]
+    fn test_oxford_comma_two_items() {
+        let sep = oxford_comma();
+        // Two items should use secondary, not tertiary
+        assert_eq!(
+            sep.format(&["red".to_string(), "blue".to_string()]),
+            "red and blue"
+        );
+    }
+
+    #[test]
+    fn test_oxford_comma_three_items() {
+        let sep = oxford_comma();
+        // Three items should use tertiary (Oxford comma)
+        assert_eq!(
+            sep.format(&["red".to_string(), "blue".to_string(), "green".to_string()]),
+            "red, blue, and green"
+        );
+    }
+
+    #[test]
+    fn test_oxford_comma_four_items() {
+        let sep = oxford_comma();
+        // Four items should use tertiary (Oxford comma)
+        assert_eq!(
+            sep.format(&[
+                "red".to_string(),
+                "blue".to_string(),
+                "green".to_string(),
+                "yellow".to_string()
+            ]),
+            "red, blue, green, and yellow"
         );
     }
 }

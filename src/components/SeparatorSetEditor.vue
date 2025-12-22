@@ -69,7 +69,7 @@
             placeholder=""
             class="separator-input"
           />
-          <small>Used for exactly two items (if defined, overrides primary/secondary for pairs)</small>
+          <small>Used before the last item in lists of 3+ (e.g., ", and " for Oxford comma: "A, B, and C")</small>
         </div>
       </div>
 
@@ -113,6 +113,10 @@
           <button @click="applyPreset('comma_and')" class="preset-btn">
             Comma And
             <span class="preset-example">"A, B and C"</span>
+          </button>
+          <button @click="applyPreset('oxford_comma')" class="preset-btn">
+            Oxford Comma
+            <span class="preset-example">"A, B, and C"</span>
           </button>
           <button @click="applyPreset('comma_or')" class="preset-btn">
             Comma Or
@@ -175,25 +179,22 @@ function formatPreview(items) {
   if (items.length === 0) return ''
   if (items.length === 1) return items[0]
 
-  // Two items with tertiary separator defined
-  if (items.length === 2 && separatorData.value.tertiary) {
-    return items[0] + separatorData.value.tertiary + items[1]
-  }
-
-  // Two items without tertiary
+  // Two items: ALWAYS use secondary
   if (items.length === 2) {
     const sep = separatorData.value.secondary || separatorData.value.primary
     return items[0] + sep + items[1]
   }
 
-  // Three or more items
+  // Three or more items: use tertiary (if defined) or fall back to secondary
   const primary = separatorData.value.primary || ''
+  const tertiary = separatorData.value.tertiary
   const secondary = separatorData.value.secondary || primary
+  const finalSep = tertiary || secondary
 
   const allButLast = items.slice(0, -1).join(primary)
   const last = items[items.length - 1]
 
-  return allButLast + secondary + last
+  return allButLast + finalSep + last
 }
 
 function applyPreset(presetName) {
@@ -202,6 +203,11 @@ function applyPreset(presetName) {
       primary: ', ',
       secondary: ' and ',
       tertiary: null
+    },
+    oxford_comma: {
+      primary: ', ',
+      secondary: ' and ',
+      tertiary: ', and '
     },
     comma_or: {
       primary: ', ',

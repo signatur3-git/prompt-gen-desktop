@@ -139,6 +139,32 @@ const rulebookInfo = computed(() => {
   }
 })
 
+// Get separator set details for preview
+const getSeparatorPreview = (separatorName: string): string | null => {
+  if (!props.package || !separatorName) return null
+
+  // Search all namespaces for the separator set
+  for (const namespace of Object.values(props.package.namespaces)) {
+    if (namespace.separator_sets && namespace.separator_sets[separatorName]) {
+      const sep = namespace.separator_sets[separatorName]
+      // Show example with 3 items using the separator
+      const example = ['A', 'B', 'C']
+
+      // Mimic the Rust separator formatting logic
+      if (example.length === 2) {
+        return `${example[0]}${sep.secondary || sep.primary}${example[1]}`
+      } else if (example.length >= 3) {
+        const allButLast = example.slice(0, -1).join(sep.primary)
+        const finalSep = sep.tertiary || sep.secondary || sep.primary
+        return `${allButLast}${finalSep}${example[example.length - 1]}`
+      }
+      return example[0]
+    }
+  }
+
+  return null
+}
+
 // Format reference details for display
 const referenceDetails = computed(() => {
   if (!templateInfo.value) return []
@@ -147,6 +173,7 @@ const referenceDetails = computed(() => {
     name: string
     target: string
     details: string[]
+    separatorPreview?: string | null
   }> = []
 
   for (const [name, ref] of Object.entries(templateInfo.value.references as Record<string, Reference>)) {
@@ -160,18 +187,17 @@ const referenceDetails = computed(() => {
       details.push(`min: ${ref.min}, max: ${ref.max}`)
     }
 
-    if (ref.separator) {
-      details.push(`separator: ${ref.separator}`)
-    }
-
     if (ref.unique) {
       details.push('unique')
     }
 
+    const separatorPreview = ref.separator ? getSeparatorPreview(ref.separator) : null
+
     refs.push({
       name,
       target: ref.target,
-      details
+      details,
+      separatorPreview: separatorPreview
     })
   }
 
@@ -498,9 +524,12 @@ watch(batchMode, () => {
               <span class="ref-arrow">→</span>
               <span class="ref-target">{{ ref.target }}</span>
             </div>
-            <div v-if="ref.details.length > 0" class="ref-details">
+            <div v-if="ref.details.length > 0 || ref.separatorPreview" class="ref-details">
               <span v-for="(detail, idx) in ref.details" :key="idx" class="detail-badge">
                 {{ detail }}
+              </span>
+              <span v-if="ref.separatorPreview" class="detail-badge separator-preview" :title="`Preview: ${ref.separatorPreview}`">
+                separator → {{ ref.separatorPreview }}
               </span>
             </div>
           </div>
@@ -1205,6 +1234,13 @@ watch(batchMode, () => {
   border-radius: 0.25rem;
   font-size: 0.75rem;
   font-family: 'Courier New', monospace;
+}
+
+.separator-preview {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  cursor: help;
 }
 </style>
 
