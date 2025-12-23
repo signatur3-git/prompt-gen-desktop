@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import PackageEditor from './components/PackageEditor.vue'
-
-const appName = 'RPG Desktop'
-const version = 'v1.0.0'
 </script>
 
 <template>

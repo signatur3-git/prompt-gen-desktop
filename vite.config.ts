@@ -7,7 +7,7 @@ export default defineConfig({
 
   // Tauri expects a fixed port
   server: {
-    port: 3000,
+    port: 5175,
     strictPort: true,
   },
 

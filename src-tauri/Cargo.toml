@@ -14,8 +14,11 @@ thiserror = "1.0"
 tauri = { version = ">=2.0.0, <3.0.0", features = [] }
 tauri-plugin-dialog = { version = ">=2.0.0, <3.0.0" }
 tauri-plugin-fs = { version = ">=2.0.0, <3.0.0" }
+tauri-plugin-shell = { version = ">=2.0.0, <3.0.0" }
+tauri-plugin-deep-link = { version = ">=2.0.0, <3.0.0" }
 clap = { version = "4.4", features = ["derive"] }
 colored = "2.1"
+tiny_http = "0.12"
 
 [build-dependencies]
 tauri-build = { version = ">=2.0.0, <3.0.0", features = [] }
@@ -34,4 +37,3 @@ path = "src/main.rs"
 [[bin]]
 name = "rpg-cli"
 path = "src/cli.rs"
-

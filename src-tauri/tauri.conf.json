@@ -6,7 +6,7 @@
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist",
-    "devUrl": "http://localhost:3000"
+    "devUrl": "http://localhost:5175"
   },
   "bundle": {
     "active": true,
@@ -19,6 +19,14 @@
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": ""
+    }
+  },
+  "plugins": {
+    "deepLink": {
+      "schemes": ["promptgen"]
+    },
+    "shell": {
+      "open": true
     }
   },
   "app": {

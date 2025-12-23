@@ -14,8 +14,14 @@
         <button @click="loadPackage" class="btn-secondary">
           Open Package
         </button>
+        <button @click="showPackageBrowser = true" class="btn-secondary" title="Browse Marketplace">
+          📦 Browse
+        </button>
         <button @click="savePackage" class="btn-primary" :disabled="!hasChanges">
           Save Package
+        </button>
+        <button @click="showMarketplaceSettings = true" class="btn-secondary" title="Marketplace Settings">
+          ⚙️ Marketplace
         </button>
       </div>
     </div>
@@ -219,6 +225,27 @@
       @cancel="showAddNamespaceDialog = false"
     />
 
+    <!-- Marketplace Settings Dialog -->
+    <div v-if="showMarketplaceSettings" class="modal-overlay" @click.self="showMarketplaceSettings = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Marketplace Settings</h2>
+          <button @click="showMarketplaceSettings = false" class="btn-close">×</button>
+        </div>
+        <MarketplaceSettings />
+      </div>
+    </div>
+
+    <!-- Package Browser Dialog -->
+    <div v-if="showPackageBrowser" class="modal-overlay" @click.self="showPackageBrowser = false">
+      <div class="modal-content modal-large">
+        <PackageBrowser
+          @close="showPackageBrowser = false"
+          @install="handlePackageInstall"
+        />
+      </div>
+    </div>
+
     <!-- Validation Panel (bottom) -->
     <ValidationPanel
       v-if="validationErrors.length > 0 || validationWarnings.length > 0"
@@ -230,7 +257,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// @ts-nocheck - Functional code, TypeScript migration pending (see MARKETPLACE_INTEGRATION_STATUS.md)
 import { ref, computed, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open, save } from '@tauri-apps/plugin-dialog'
@@ -245,6 +273,11 @@ import PromptSectionEditor from './PromptSectionEditor.vue'
 import RulesEditor from './RulesEditor.vue'
 import RulebookEditor from './RulebookEditor.vue'
 import PackageMetadataEditor from './PackageMetadataEditor.vue'
+import MarketplaceSettings from './MarketplaceSettings.vue'
+import PackageBrowser from './PackageBrowser.vue'
+import { marketplaceClient, type MarketplacePackage } from '../services/marketplace-client'
+import { writeTextFile, mkdir } from '@tauri-apps/plugin-fs'
+import { join, appDataDir } from '@tauri-apps/api/path'
 
 // App version constant
 const APP_VERSION = '1.0.0'
@@ -258,6 +291,8 @@ const validationWarnings = ref([])
 const hasChanges = ref(false)
 const showNewPackageDialog = ref(false)
 const showAddNamespaceDialog = ref(false)
+const showMarketplaceSettings = ref(false)
+const showPackageBrowser = ref(false)
 const newRulebookData = ref({
   name: '',
   description: '',
@@ -861,6 +896,72 @@ function jumpToError(error) {
 
   console.warn('Could not find component for location:', location)
 }
+
+/**
+ * Handle package installation from marketplace
+ */
+async function handlePackageInstall(pkg, version) {
+  try {
+    // Download package YAML content
+    const yamlContent = await marketplaceClient.downloadPackage(
+      pkg.namespace,
+      pkg.name,
+      version
+    )
+
+    // Determine save location (app data directory)
+    const appDir = await appDataDir()
+    const packagesDir = await join(appDir, 'packages')
+
+    // Create packages directory if it doesn't exist
+    try {
+      await mkdir(packagesDir, { recursive: true })
+    } catch (error) {
+      // Directory might already exist, ignore error
+      console.log('Packages directory exists or created')
+    }
+
+    const fileName = `${pkg.namespace}.${pkg.name}.yaml`
+    const filePath = await join(packagesDir, fileName)
+
+    // Save package file
+    await writeTextFile(filePath, yamlContent)
+
+    // Show success message
+    alert(`Package ${pkg.namespace}/${pkg.name} v${version} installed successfully!\nLocation: ${filePath}`)
+
+    // Optionally load the package immediately
+    const shouldLoad = confirm('Would you like to open the installed package now?')
+    if (shouldLoad) {
+      await loadPackageFromPath(filePath)
+    }
+
+    // Close browser
+    showPackageBrowser.value = false
+  } catch (error) {
+    console.error('Package installation failed:', error)
+    alert(`Failed to install package: ${error.message}`)
+  }
+}
+
+/**
+ * Load package from a specific path
+ */
+async function loadPackageFromPath(filePath) {
+  try {
+    const result = await invoke('load_package_with_dependencies', { path: filePath })
+    currentPackage.value = result.package
+    loadedDependencies.value = result.dependencies || {}
+    hasChanges.value = false
+    selectedComponent.value = null
+
+    // Validate after loading
+    await validatePackage(currentPackage.value)
+  } catch (error) {
+    console.error('Failed to load package:', error)
+    alert(`Failed to load package: ${error.message}`)
+  }
+}
 </script>
 
 <style scoped>
@@ -1044,6 +1145,70 @@ function jumpToError(error) {
 .btn-cancel:hover {
   background: #505050;
 }
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #1e1e1e;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.modal-large {
+  max-width: 1200px;
+  width: 95%;
+  max-height: 90vh;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #cccccc;
+  font-size: 18px;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: #cccccc;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.btn-close:hover {
+  background: #3e3e42;
+}
+
 </style>
 
 

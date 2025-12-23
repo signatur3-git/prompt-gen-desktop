@@ -546,7 +546,7 @@ watch(batchMode, () => {
         <h5>Entry Points ({{ rulebookInfo.entryPoints.length }})</h5>
         <div class="entry-points-list">
           <div v-for="(ep, idx) in rulebookInfo.entryPoints" :key="idx" class="entry-point">
-            <span class="ep-number">{{ idx + 1 }}</span>
+            <span class="ep-number">{{ Number(idx) + 1 }}</span>
             <span class="ep-ref">{{ ep.prompt_section }}</span>
             <span class="ep-weight">weight: {{ ep.weight }}</span>
           </div>
