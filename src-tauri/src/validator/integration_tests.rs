@@ -2,8 +2,8 @@
 
 #[cfg(test)]
 mod integration_tests {
-    use crate::validator::PackageValidator;
     use crate::parser::parse_yaml;
+    use crate::validator::PackageValidator;
     use std::fs;
 
     #[test]
@@ -15,8 +15,11 @@ mod integration_tests {
         let result = PackageValidator::validate(&package);
 
         // Should be valid (though may have warnings about unused components)
-        assert!(result.is_valid(),
-            "minimal.yaml should be valid. Errors: {:?}", result.errors);
+        assert!(
+            result.is_valid(),
+            "minimal.yaml should be valid. Errors: {:?}",
+            result.errors
+        );
     }
 
     #[test]
@@ -27,8 +30,11 @@ mod integration_tests {
 
         let result = PackageValidator::validate(&package);
 
-        assert!(result.is_valid(),
-            "article-test.yaml should be valid. Errors: {:?}", result.errors);
+        assert!(
+            result.is_valid(),
+            "article-test.yaml should be valid. Errors: {:?}",
+            result.errors
+        );
     }
 
     #[test]
@@ -39,8 +45,11 @@ mod integration_tests {
 
         let result = PackageValidator::validate(&package);
 
-        assert!(result.is_valid(),
-            "lists-test.yaml should be valid. Errors: {:?}", result.errors);
+        assert!(
+            result.is_valid(),
+            "lists-test.yaml should be valid. Errors: {:?}",
+            result.errors
+        );
     }
 
     #[test]
@@ -51,7 +60,11 @@ mod integration_tests {
 
         let result = PackageValidator::validate(&package);
 
-        assert!(!result.is_valid(), "missing-reference.yaml should be invalid. Errors: {:?}", result.errors);
+        assert!(
+            !result.is_valid(),
+            "missing-reference.yaml should be invalid. Errors: {:?}",
+            result.errors
+        );
         assert!(result.errors.len() > 0, "Should have at least one error");
     }
 
@@ -63,9 +76,19 @@ mod integration_tests {
 
         let result = PackageValidator::validate(&package);
 
-        assert!(!result.is_valid(), "min-max-reversed.yaml should be invalid. Errors: {:?}", result.errors);
-        assert!(result.errors.iter().any(|e| matches!(e, crate::validator::ValidationError::MinMaxInvalid { .. })),
-            "Should have MinMaxInvalid error. Got: {:?}", result.errors);
+        assert!(
+            !result.is_valid(),
+            "min-max-reversed.yaml should be invalid. Errors: {:?}",
+            result.errors
+        );
+        assert!(
+            result
+                .errors
+                .iter()
+                .any(|e| matches!(e, crate::validator::ValidationError::MinMaxInvalid { .. })),
+            "Should have MinMaxInvalid error. Got: {:?}",
+            result.errors
+        );
     }
 
     #[test]
@@ -76,9 +99,18 @@ mod integration_tests {
 
         let result = PackageValidator::validate(&package);
 
-        assert!(!result.is_valid(), "circular-refs.yaml should be invalid. Errors: {:?}", result.errors);
-        assert!(result.errors.iter().any(|e| matches!(e, crate::validator::ValidationError::CircularReference { .. })),
-            "Should have CircularReference error. Got: {:?}", result.errors);
+        assert!(
+            !result.is_valid(),
+            "circular-refs.yaml should be invalid. Errors: {:?}",
+            result.errors
+        );
+        assert!(
+            result.errors.iter().any(|e| matches!(
+                e,
+                crate::validator::ValidationError::CircularReference { .. }
+            )),
+            "Should have CircularReference error. Got: {:?}",
+            result.errors
+        );
     }
 }
-

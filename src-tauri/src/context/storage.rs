@@ -108,11 +108,13 @@ impl Context {
         K: AsRef<str>,
     {
         let value = self.get(key.as_ref())?;
-        value.as_number().ok_or_else(|| ContextError::TypeConversion {
-            key: key.as_ref().to_string(),
-            expected: "number".to_string(),
-            actual: format!("{:?}", value),
-        })
+        value
+            .as_number()
+            .ok_or_else(|| ContextError::TypeConversion {
+                key: key.as_ref().to_string(),
+                expected: "number".to_string(),
+                actual: format!("{:?}", value),
+            })
     }
 
     /// Get a value as boolean, with conversion if needed
@@ -122,11 +124,13 @@ impl Context {
         K: AsRef<str>,
     {
         let value = self.get(key.as_ref())?;
-        value.as_boolean().ok_or_else(|| ContextError::TypeConversion {
-            key: key.as_ref().to_string(),
-            expected: "boolean".to_string(),
-            actual: format!("{:?}", value),
-        })
+        value
+            .as_boolean()
+            .ok_or_else(|| ContextError::TypeConversion {
+                key: key.as_ref().to_string(),
+                expected: "boolean".to_string(),
+                actual: format!("{:?}", value),
+            })
     }
 
     /// Check if a key exists
@@ -326,4 +330,3 @@ mod tests {
         assert!(prompt_scope.contains_key("key2"));
     }
 }
-

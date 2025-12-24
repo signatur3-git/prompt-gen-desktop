@@ -50,9 +50,16 @@ export class OAuthCallbackHandler {
       const state = oauthService.generateState();
 
       // DEV: start loopback callback server in Rust and use its redirect URI.
-      // PROD: keep using the deep-link redirect URI.
+      // PROD: use deep-link redirect URI on macOS/Linux, but on Windows deep links may spawn
+      //       a second instance. For packaged Windows builds, prefer loopback too.
       let originalRedirectUri: string | null = null;
-      if (import.meta.env.DEV) {
+
+      const shouldUseLoopback =
+        import.meta.env.DEV ||
+        // In production Windows builds, deep link callbacks may start a new instance.
+        (import.meta.env.PROD && navigator.userAgent.toLowerCase().includes('windows'));
+
+      if (shouldUseLoopback) {
         originalRedirectUri = marketplaceConfig.redirectUri;
         const resp = await invoke<{ redirectUri: string }>('oauth_start_loopback');
         marketplaceConfig.redirectUri = resp.redirectUri;
@@ -92,7 +99,7 @@ export class OAuthCallbackHandler {
       const accessToken = await oauthService.exchangeCodeForToken(callbackData.code, verifier);
 
       // Restore configured redirect URI (defensive)
-      if (import.meta.env.DEV && originalRedirectUri) {
+      if (shouldUseLoopback && originalRedirectUri) {
         marketplaceConfig.redirectUri = originalRedirectUri;
       }
 

@@ -1,4 +1,4 @@
-﻿// M6 Phase 2: CLI Tool for Package Operations
+// M6 Phase 2: CLI Tool for Package Operations
 // Beautiful terminal interface with helpful output
 
 use clap::{Parser, Subcommand};
@@ -6,12 +6,12 @@ use colored::*;
 use std::path::PathBuf;
 use std::process;
 
+mod context;
 mod core;
 mod parser;
-mod validator;
 mod renderer;
-mod context;
 mod rules;
+mod validator;
 
 use parser::{load_package, DependencyResolver};
 use validator::{PackageValidator, ValidationError, ValidationWarning};
@@ -73,15 +73,18 @@ fn main() {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Commands::Validate { path, warnings, verbose } => {
-            validate_command(path, warnings, verbose)
-        }
-        Commands::Info { path } => {
-            info_command(path)
-        }
-        Commands::Render { path, section, seed, count } => {
-            render_command(path, section, seed, count)
-        }
+        Commands::Validate {
+            path,
+            warnings,
+            verbose,
+        } => validate_command(path, warnings, verbose),
+        Commands::Info { path } => info_command(path),
+        Commands::Render {
+            path,
+            section,
+            seed,
+            count,
+        } => render_command(path, section, seed, count),
     };
 
     if let Err(exit_code) = result {
@@ -99,7 +102,10 @@ fn validate_command(path: PathBuf, show_warnings: bool, verbose: bool) -> Result
 
     // M9 Phase 2.7: Load package with dependencies
     if verbose {
-        println!("{} Loading package with dependencies...", "â†’".bright_blue());
+        println!(
+            "{} Loading package with dependencies...",
+            "â†’".bright_blue()
+        );
     }
 
     // Set up search paths for dependencies
@@ -116,9 +122,17 @@ fn validate_command(path: PathBuf, show_warnings: bool, verbose: bool) -> Result
             if verbose {
                 println!("{} Package loaded successfully", "âœ“".green());
                 if !deps.is_empty() {
-                    println!("  {} Dependencies loaded: {}", "â†’".bright_blue(), deps.len());
+                    println!(
+                        "  {} Dependencies loaded: {}",
+                        "â†’".bright_blue(),
+                        deps.len()
+                    );
                     for (dep_id, dep_pkg) in &deps {
-                        println!("    - {} v{}", dep_id.bright_yellow(), dep_pkg.version.bright_black());
+                        println!(
+                            "    - {} v{}",
+                            dep_id.bright_yellow(),
+                            dep_pkg.version.bright_black()
+                        );
                     }
                 }
             }
@@ -197,7 +211,11 @@ fn display_errors(errors: &[ValidationError], verbose: bool) {
     println!();
 
     for (i, error) in errors.iter().enumerate() {
-        println!("  {}. {}", (i + 1).to_string().red(), format!("{}", error).bright_red());
+        println!(
+            "  {}. {}",
+            (i + 1).to_string().red(),
+            format!("{}", error).bright_red()
+        );
 
         if verbose {
             // Could add more details here in verbose mode
@@ -213,7 +231,11 @@ fn display_warnings(warnings: &[ValidationWarning], verbose: bool) {
     println!();
 
     for (i, warning) in warnings.iter().enumerate() {
-        println!("  {}. {}", (i + 1).to_string().yellow(), format!("{}", warning).bright_yellow());
+        println!(
+            "  {}. {}",
+            (i + 1).to_string().yellow(),
+            format!("{}", warning).bright_yellow()
+        );
 
         if verbose {
             // Could add more details here in verbose mode
@@ -226,7 +248,11 @@ fn display_warnings(warnings: &[ValidationWarning], verbose: bool) {
 /// Info command - display package information
 fn info_command(path: PathBuf) -> Result<(), i32> {
     println!("{}", "=".repeat(60).bright_blue());
-    println!("{} {}", "Package Information:".bright_cyan().bold(), path.display());
+    println!(
+        "{} {}",
+        "Package Information:".bright_cyan().bold(),
+        path.display()
+    );
     println!("{}", "=".repeat(60).bright_blue());
     println!();
 
@@ -241,37 +267,76 @@ fn info_command(path: PathBuf) -> Result<(), i32> {
     };
 
     // Display info
-    println!("{} {} v{}",
+    println!(
+        "{} {} v{}",
         "Package:".bright_cyan().bold(),
         package.id.bright_white().bold(),
-        package.version.bright_white());
+        package.version.bright_white()
+    );
 
     if let Some(desc) = &package.metadata.description {
         println!("{} {}", "Description:".bright_cyan(), desc);
     }
 
     if !package.metadata.authors.is_empty() {
-        println!("{} {}", "Authors:".bright_cyan(), package.metadata.authors.join(", "));
+        println!(
+            "{} {}",
+            "Authors:".bright_cyan(),
+            package.metadata.authors.join(", ")
+        );
     }
 
     println!();
-    println!("{} {}", "Namespaces:".bright_cyan().bold(), package.namespaces.len());
+    println!(
+        "{} {}",
+        "Namespaces:".bright_cyan().bold(),
+        package.namespaces.len()
+    );
 
     for (ns_id, namespace) in &package.namespaces {
         println!();
-        println!("  {} {}", "â””â”€".bright_blue(), ns_id.bright_white().bold());
-        println!("     {} {} datatype(s)", "â”œâ”€".bright_black(), namespace.datatypes.len());
-        println!("     {} {} promptsection(s)", "â”œâ”€".bright_black(), namespace.prompt_sections.len());
-        println!("     {} {} separator set(s)", "â”œâ”€".bright_black(), namespace.separator_sets.len());
-        println!("     {} {} rule(s)", "â””â”€".bright_black(), namespace.rules.len());
+        println!(
+            "  {} {}",
+            "â””â”€".bright_blue(),
+            ns_id.bright_white().bold()
+        );
+        println!(
+            "     {} {} datatype(s)",
+            "â”œâ”€".bright_black(),
+            namespace.datatypes.len()
+        );
+        println!(
+            "     {} {} promptsection(s)",
+            "â”œâ”€".bright_black(),
+            namespace.prompt_sections.len()
+        );
+        println!(
+            "     {} {} separator set(s)",
+            "â”œâ”€".bright_black(),
+            namespace.separator_sets.len()
+        );
+        println!(
+            "     {} {} rule(s)",
+            "â””â”€".bright_black(),
+            namespace.rules.len()
+        );
     }
 
     println!();
-    println!("{} {}", "Dependencies:".bright_cyan().bold(), package.dependencies.len());
+    println!(
+        "{} {}",
+        "Dependencies:".bright_cyan().bold(),
+        package.dependencies.len()
+    );
 
     if !package.dependencies.is_empty() {
         for dep in &package.dependencies {
-            println!("  {} {} (v{})", "â””â”€".bright_blue(), dep.package, dep.version);
+            println!(
+                "  {} {} (v{})",
+                "â””â”€".bright_blue(),
+                dep.package,
+                dep.version
+            );
         }
     }
 
@@ -283,22 +348,34 @@ fn info_command(path: PathBuf) -> Result<(), i32> {
 
 /// Render command - render a prompt section
 fn render_command(path: PathBuf, section: String, seed: u64, count: usize) -> Result<(), i32> {
-    use renderer::Renderer;
     use parser::load_package_with_dependencies;
+    use renderer::Renderer;
 
     println!("{}", "=".repeat(60).bright_blue());
-    println!("{} {}", "Rendering:".bright_cyan().bold(), section.bright_white());
+    println!(
+        "{} {}",
+        "Rendering:".bright_cyan().bold(),
+        section.bright_white()
+    );
     println!("{}", "=".repeat(60).bright_blue());
     println!();
 
     // M8.5 Blocker 2 Phase 2: Load package with dependencies
-    println!("{} Loading package from {}", "â†’".bright_blue(), path.display());
+    println!(
+        "{} Loading package from {}",
+        "â†’".bright_blue(),
+        path.display()
+    );
 
     let loaded = match load_package_with_dependencies(&path) {
         Ok(loaded) => {
             println!("{} Package loaded", "âœ“".green());
             if !loaded.dependencies.is_empty() {
-                println!("{} {} dependencies loaded", "âœ“".green(), loaded.dependencies.len());
+                println!(
+                    "{} {} dependencies loaded",
+                    "âœ“".green(),
+                    loaded.dependencies.len()
+                );
             }
             loaded
         }
@@ -316,16 +393,19 @@ fn render_command(path: PathBuf, section: String, seed: u64, count: usize) -> Re
         let current_seed = seed + i as u64;
 
         if count > 1 {
-            println!("{} {} (Seed: {})",
+            println!(
+                "{} {} (Seed: {})",
                 format!("#{}", i + 1).bright_blue().bold(),
                 "â”€".repeat(54).bright_black(),
-                current_seed.to_string().bright_black());
+                current_seed.to_string().bright_black()
+            );
         } else {
             println!("{} {}", "Seed:".bright_cyan(), current_seed);
         }
 
         // M8.5 Blocker 2 Phase 2: Use new_with_dependencies
-        let renderer = Renderer::new_with_dependencies(&loaded.package, &loaded.dependencies, current_seed);
+        let renderer =
+            Renderer::new_with_dependencies(&loaded.package, &loaded.dependencies, current_seed);
 
         match renderer.render(&section) {
             Ok(result) => {
@@ -340,7 +420,11 @@ fn render_command(path: PathBuf, section: String, seed: u64, count: usize) -> Re
             }
             Err(e) => {
                 println!();
-                println!("  {} {}", "âœ—".red().bold(), format!("Render error: {}", e).red());
+                println!(
+                    "  {} {}",
+                    "âœ—".red().bold(),
+                    format!("Render error: {}", e).red()
+                );
                 println!();
                 return Err(1);
             }
@@ -354,10 +438,13 @@ fn render_command(path: PathBuf, section: String, seed: u64, count: usize) -> Re
     if count > 1 {
         println!();
         println!("{}", "â”€".repeat(60).bright_black());
-        println!("{} {}", "Total:".bright_cyan(), format!("{} prompts rendered", count).bright_white());
+        println!(
+            "{} {}",
+            "Total:".bright_cyan(),
+            format!("{} prompts rendered", count).bright_white()
+        );
         println!("{}", "â”€".repeat(60).bright_black());
     }
 
     Ok(())
 }
-

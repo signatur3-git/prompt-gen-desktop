@@ -75,9 +75,15 @@ impl<'a> RulesProcessor<'a> {
         // Extract the key from "context.prompt.article" -> "article"
         // or "context.global.time" -> "global:time"
         let key = if rule.set.starts_with("context.prompt.") {
-            rule.set.strip_prefix("context.prompt.").unwrap().to_string()
+            rule.set
+                .strip_prefix("context.prompt.")
+                .unwrap()
+                .to_string()
         } else if rule.set.starts_with("context.global.") {
-            format!("global:{}", rule.set.strip_prefix("context.global.").unwrap())
+            format!(
+                "global:{}",
+                rule.set.strip_prefix("context.global.").unwrap()
+            )
         } else if rule.set.starts_with("context.") {
             // Generic context.section.key format
             rule.set.strip_prefix("context.").unwrap().replace(".", ":")
@@ -137,7 +143,8 @@ impl<'a> RulesProcessor<'a> {
         let ref_name = parts[0];
 
         // Get the selected value
-        let selected_value = self.selected
+        let selected_value = self
+            .selected
             .get(ref_name)
             .ok_or_else(|| RuleError::ReferenceNotFound(ref_name.to_string()))?;
 
@@ -167,11 +174,13 @@ impl<'a> RulesProcessor<'a> {
                 }
 
                 let tag_name = parts[2];
-                let tag_value = selected_value.tags
-                    .get(tag_name)
-                    .ok_or_else(|| RuleError::TagNotFound {
-                        path: format!("{}.tags.{}", ref_name, tag_name),
-                    })?;
+                let tag_value =
+                    selected_value
+                        .tags
+                        .get(tag_name)
+                        .ok_or_else(|| RuleError::TagNotFound {
+                            path: format!("{}.tags.{}", ref_name, tag_name),
+                        })?;
 
                 // Convert serde_json::Value to ContextValue
                 self.json_to_context_value(tag_value)
@@ -227,10 +236,13 @@ mod tests {
         tags.insert("phonetic".to_string(), json!("vowel"));
         tags.insert("count".to_string(), json!(5));
 
-        selected.insert("color".to_string(), SelectedValue {
-            text: "orange".to_string(),
-            tags,
-        });
+        selected.insert(
+            "color".to_string(),
+            SelectedValue {
+                text: "orange".to_string(),
+                tags,
+            },
+        );
 
         selected
     }
@@ -261,7 +273,9 @@ mod tests {
         let mut ctx = Context::new();
         let processor = RulesProcessor::new(&mut ctx, &selected);
 
-        let result = processor.evaluate_expression("ref:color.tags.article").unwrap();
+        let result = processor
+            .evaluate_expression("ref:color.tags.article")
+            .unwrap();
         assert_eq!(result.as_text().unwrap(), "an");
     }
 
@@ -271,7 +285,9 @@ mod tests {
         let mut ctx = Context::new();
         let processor = RulesProcessor::new(&mut ctx, &selected);
 
-        let result = processor.evaluate_expression("ref:color.tags.count").unwrap();
+        let result = processor
+            .evaluate_expression("ref:color.tags.count")
+            .unwrap();
         assert_eq!(result.as_number().unwrap(), 5);
     }
 
@@ -300,18 +316,24 @@ mod tests {
         let mut processor = RulesProcessor::new(&mut ctx, &selected);
 
         let mut rules = HashMap::new();
-        rules.insert("rule1".to_string(), Rule {
-            when: "ref:color.tags.article".to_string(),
-            logic: String::new(),
-            set: "context.prompt.article".to_string(),
-            value: "ref:color.tags.article".to_string(),
-        });
-        rules.insert("rule2".to_string(), Rule {
-            when: "ref:color.text".to_string(),
-            logic: String::new(),
-            set: "context.prompt.test_color".to_string(),
-            value: "ref:color.text".to_string(),
-        });
+        rules.insert(
+            "rule1".to_string(),
+            Rule {
+                when: "ref:color.tags.article".to_string(),
+                logic: String::new(),
+                set: "context.prompt.article".to_string(),
+                value: "ref:color.tags.article".to_string(),
+            },
+        );
+        rules.insert(
+            "rule2".to_string(),
+            Rule {
+                when: "ref:color.text".to_string(),
+                logic: String::new(),
+                set: "context.prompt.test_color".to_string(),
+                value: "ref:color.text".to_string(),
+            },
+        );
 
         processor.execute_rules(&rules).unwrap();
 
@@ -339,4 +361,3 @@ mod tests {
         assert!(result.is_err());
     }
 }
-

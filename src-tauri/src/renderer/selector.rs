@@ -5,7 +5,7 @@
 
 use crate::core::{Datatype, DatatypeValue, Package};
 use crate::renderer::seeded_random::SeededRandom;
-use crate::renderer::tag_expression::{ExpressionParser, evaluate_with_context};
+use crate::renderer::tag_expression::{evaluate_with_context, ExpressionParser};
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -90,7 +90,7 @@ impl<'a> Selector<'a> {
         &mut self,
         reference: &str,
         filter: Option<&str>,
-        selected: &HashMap<String, (String, HashMap<String, serde_json::Value>)>
+        selected: &HashMap<String, (String, HashMap<String, serde_json::Value>)>,
     ) -> Result<SelectedValue> {
         // Parse reference (simple version for M3)
         let (namespace, datatype_name) = self.parse_reference(reference)?;
@@ -118,7 +118,7 @@ impl<'a> Selector<'a> {
         count: usize,
         filter: Option<&str>,
         unique: bool,
-        selected: &HashMap<String, (String, HashMap<String, serde_json::Value>)>
+        selected: &HashMap<String, (String, HashMap<String, serde_json::Value>)>,
     ) -> Result<Vec<SelectedValue>> {
         if count == 0 {
             return Ok(Vec::new());
@@ -199,10 +199,9 @@ impl<'a> Selector<'a> {
             Ok((parts[0].to_string(), parts[1].to_string()))
         } else {
             // Use first namespace as default (or could use package default)
-            let first_namespace = self.package.namespaces
-                .keys()
-                .next()
-                .ok_or_else(|| SelectionError::InvalidReference("No namespaces in package".to_string()))?;
+            let first_namespace = self.package.namespaces.keys().next().ok_or_else(|| {
+                SelectionError::InvalidReference("No namespaces in package".to_string())
+            })?;
 
             Ok((first_namespace.clone(), reference.to_string()))
         }
@@ -230,11 +229,18 @@ impl<'a> Selector<'a> {
         }
 
         // Not found anywhere
-        Err(SelectionError::DatatypeNotFound(format!("{}:{}", namespace, name)))
+        Err(SelectionError::DatatypeNotFound(format!(
+            "{}:{}",
+            namespace, name
+        )))
     }
 
     /// Select a value from a list of datatype values, respecting weights
-    fn select_from_values(&mut self, values: &[DatatypeValue], name: &str) -> Result<SelectedValue> {
+    fn select_from_values(
+        &mut self,
+        values: &[DatatypeValue],
+        name: &str,
+    ) -> Result<SelectedValue> {
         if values.is_empty() {
             return Err(SelectionError::EmptyDatatype(name.to_string()));
         }
@@ -263,14 +269,15 @@ impl<'a> Selector<'a> {
         &self,
         values: Vec<DatatypeValue>,
         filter_expr: &str,
-        selected: &HashMap<String, (String, HashMap<String, serde_json::Value>)>
+        selected: &HashMap<String, (String, HashMap<String, serde_json::Value>)>,
     ) -> Result<Vec<DatatypeValue>> {
         // Parse the filter expression
         let expression = ExpressionParser::parse(filter_expr)
             .map_err(|e| SelectionError::TagExpressionParse(e.to_string()))?;
 
         // Filter values using the parsed expression with selected values context
-        let filtered: Vec<DatatypeValue> = values.into_iter()
+        let filtered: Vec<DatatypeValue> = values
+            .into_iter()
             .filter(|value| evaluate_with_context(&expression, &value.tags, selected))
             .collect();
 
@@ -281,8 +288,6 @@ impl<'a> Selector<'a> {
 
         Ok(filtered)
     }
-
-
 }
 
 #[cfg(test)]
@@ -294,34 +299,40 @@ mod tests {
         let mut datatypes = HashMap::new();
 
         // Colors datatype
-        datatypes.insert("colors".to_string(), Datatype {
-            name: "colors".to_string(),
-            values: vec![
-                DatatypeValue {
-                    text: "red".to_string(),
-                    tags: HashMap::new(),
-                    weight: 1.0,
-                },
-                DatatypeValue {
-                    text: "blue".to_string(),
-                    tags: HashMap::new(),
-                    weight: 1.0,
-                },
-            ],
-            extends: None,
-            override_tags: HashMap::new(),
-        });
+        datatypes.insert(
+            "colors".to_string(),
+            Datatype {
+                name: "colors".to_string(),
+                values: vec![
+                    DatatypeValue {
+                        text: "red".to_string(),
+                        tags: HashMap::new(),
+                        weight: 1.0,
+                    },
+                    DatatypeValue {
+                        text: "blue".to_string(),
+                        tags: HashMap::new(),
+                        weight: 1.0,
+                    },
+                ],
+                extends: None,
+                override_tags: HashMap::new(),
+            },
+        );
 
         let mut namespaces = HashMap::new();
-        namespaces.insert("test".to_string(), Namespace {
-            id: "test".to_string(),
-            datatypes,
-            prompt_sections: HashMap::new(),
-            separator_sets: HashMap::new(),
-            rules: HashMap::new(),
-            decisions: Vec::new(),
-            rulebooks: HashMap::new(), // M9
-        });
+        namespaces.insert(
+            "test".to_string(),
+            Namespace {
+                id: "test".to_string(),
+                datatypes,
+                prompt_sections: HashMap::new(),
+                separator_sets: HashMap::new(),
+                rules: HashMap::new(),
+                decisions: Vec::new(),
+                rulebooks: HashMap::new(), // M9
+            },
+        );
 
         Package {
             id: "test.package".to_string(),
@@ -382,51 +393,57 @@ mod tests {
         let mut datatypes = HashMap::new();
 
         // Animals datatype with can_fly tag
-        datatypes.insert("animals".to_string(), Datatype {
-            name: "animals".to_string(),
-            values: vec![
-                DatatypeValue {
-                    text: "eagle".to_string(),
-                    tags: {
-                        let mut tags = HashMap::new();
-                        tags.insert("can_fly".to_string(), serde_json::Value::Bool(true));
-                        tags
+        datatypes.insert(
+            "animals".to_string(),
+            Datatype {
+                name: "animals".to_string(),
+                values: vec![
+                    DatatypeValue {
+                        text: "eagle".to_string(),
+                        tags: {
+                            let mut tags = HashMap::new();
+                            tags.insert("can_fly".to_string(), serde_json::Value::Bool(true));
+                            tags
+                        },
+                        weight: 1.0,
                     },
-                    weight: 1.0,
-                },
-                DatatypeValue {
-                    text: "deer".to_string(),
-                    tags: {
-                        let mut tags = HashMap::new();
-                        tags.insert("can_fly".to_string(), serde_json::Value::Bool(false));
-                        tags
+                    DatatypeValue {
+                        text: "deer".to_string(),
+                        tags: {
+                            let mut tags = HashMap::new();
+                            tags.insert("can_fly".to_string(), serde_json::Value::Bool(false));
+                            tags
+                        },
+                        weight: 1.0,
                     },
-                    weight: 1.0,
-                },
-                DatatypeValue {
-                    text: "swan".to_string(),
-                    tags: {
-                        let mut tags = HashMap::new();
-                        tags.insert("can_fly".to_string(), serde_json::Value::Bool(true));
-                        tags
+                    DatatypeValue {
+                        text: "swan".to_string(),
+                        tags: {
+                            let mut tags = HashMap::new();
+                            tags.insert("can_fly".to_string(), serde_json::Value::Bool(true));
+                            tags
+                        },
+                        weight: 1.0,
                     },
-                    weight: 1.0,
-                },
-            ],
-            extends: None,
-            override_tags: HashMap::new(),
-        });
+                ],
+                extends: None,
+                override_tags: HashMap::new(),
+            },
+        );
 
         let mut namespaces = HashMap::new();
-        namespaces.insert("test".to_string(), Namespace {
-            id: "test".to_string(),
-            datatypes,
-            prompt_sections: HashMap::new(),
-            separator_sets: HashMap::new(),
-            rules: HashMap::new(),
-            decisions: Vec::new(),
-            rulebooks: HashMap::new(), // M9
-        });
+        namespaces.insert(
+            "test".to_string(),
+            Namespace {
+                id: "test".to_string(),
+                datatypes,
+                prompt_sections: HashMap::new(),
+                separator_sets: HashMap::new(),
+                rules: HashMap::new(),
+                decisions: Vec::new(),
+                rulebooks: HashMap::new(), // M9
+            },
+        );
 
         let package = Package {
             id: "test.package".to_string(),
@@ -444,7 +461,9 @@ mod tests {
         let mut selector = Selector::new(&package, 42);
 
         // Select with filter - should only get flying animals
-        let result = selector.select_with_filter("animals", Some("tags.can_fly"), &HashMap::new()).unwrap();
+        let result = selector
+            .select_with_filter("animals", Some("tags.can_fly"), &HashMap::new())
+            .unwrap();
         assert!(result.text == "eagle" || result.text == "swan");
         assert_ne!(result.text, "deer");
     }
@@ -454,29 +473,33 @@ mod tests {
         let mut datatypes = HashMap::new();
 
         // Animals without can_swim tag
-        datatypes.insert("animals".to_string(), Datatype {
-            name: "animals".to_string(),
-            values: vec![
-                DatatypeValue {
+        datatypes.insert(
+            "animals".to_string(),
+            Datatype {
+                name: "animals".to_string(),
+                values: vec![DatatypeValue {
                     text: "eagle".to_string(),
                     tags: HashMap::new(),
                     weight: 1.0,
-                },
-            ],
-            extends: None,
-            override_tags: HashMap::new(),
-        });
+                }],
+                extends: None,
+                override_tags: HashMap::new(),
+            },
+        );
 
         let mut namespaces = HashMap::new();
-        namespaces.insert("test".to_string(), Namespace {
-            id: "test".to_string(),
-            datatypes,
-            prompt_sections: HashMap::new(),
-            separator_sets: HashMap::new(),
-            rules: HashMap::new(),
-            decisions: Vec::new(),
-            rulebooks: HashMap::new(), // M9
-        });
+        namespaces.insert(
+            "test".to_string(),
+            Namespace {
+                id: "test".to_string(),
+                datatypes,
+                prompt_sections: HashMap::new(),
+                separator_sets: HashMap::new(),
+                rules: HashMap::new(),
+                decisions: Vec::new(),
+                rulebooks: HashMap::new(), // M9
+            },
+        );
 
         let package = Package {
             id: "test.package".to_string(),
@@ -503,46 +526,54 @@ mod tests {
         // Test selecting with cross-reference filter
         let mut datatypes = HashMap::new();
 
-        datatypes.insert("features".to_string(), Datatype {
-            name: "features".to_string(),
-            values: vec![
-                DatatypeValue {
+        datatypes.insert(
+            "features".to_string(),
+            Datatype {
+                name: "features".to_string(),
+                values: vec![DatatypeValue {
                     text: "eyes".to_string(),
                     tags: HashMap::new(),
                     weight: 1.0,
-                },
-            ],
-            extends: None,
-            override_tags: HashMap::new(),
-        });
+                }],
+                extends: None,
+                override_tags: HashMap::new(),
+            },
+        );
 
-        datatypes.insert("adjectives".to_string(), Datatype {
-            name: "adjectives".to_string(),
-            values: vec![
-                DatatypeValue {
+        datatypes.insert(
+            "adjectives".to_string(),
+            Datatype {
+                name: "adjectives".to_string(),
+                values: vec![DatatypeValue {
                     text: "blue".to_string(),
                     tags: {
                         let mut tags = HashMap::new();
-                        tags.insert("applies_to".to_string(), serde_json::json!(["eyes", "claws"]));
+                        tags.insert(
+                            "applies_to".to_string(),
+                            serde_json::json!(["eyes", "claws"]),
+                        );
                         tags
                     },
                     weight: 1.0,
-                },
-            ],
-            extends: None,
-            override_tags: HashMap::new(),
-        });
+                }],
+                extends: None,
+                override_tags: HashMap::new(),
+            },
+        );
 
         let mut namespaces = HashMap::new();
-        namespaces.insert("test".to_string(), Namespace {
-            id: "test".to_string(),
-            datatypes,
-            prompt_sections: HashMap::new(),
-            separator_sets: HashMap::new(),
-            rules: HashMap::new(),
-            decisions: Vec::new(),
-            rulebooks: HashMap::new(), // M9
-        });
+        namespaces.insert(
+            "test".to_string(),
+            Namespace {
+                id: "test".to_string(),
+                datatypes,
+                prompt_sections: HashMap::new(),
+                separator_sets: HashMap::new(),
+                rules: HashMap::new(),
+                decisions: Vec::new(),
+                rulebooks: HashMap::new(), // M9
+            },
+        );
 
         let package = Package {
             id: "test.package".to_string(),
@@ -565,12 +596,19 @@ mod tests {
             "feature".to_string(),
             ("eyes".to_string(), {
                 let mut tags = HashMap::new();
-                tags.insert("applies_to".to_string(), serde_json::json!(["eyes", "claws"]));
+                tags.insert(
+                    "applies_to".to_string(),
+                    serde_json::json!(["eyes", "claws"]),
+                );
                 tags
-            })
+            }),
         );
 
-        let result = selector.select_with_filter("adjectives", Some("ref:feature.text in tags.applies_to"), &selected);
+        let result = selector.select_with_filter(
+            "adjectives",
+            Some("ref:feature.text in tags.applies_to"),
+            &selected,
+        );
         assert!(result.is_ok());
         let value = result.unwrap();
         assert_eq!(value.text, "blue"); // Value with "eyes" in applies_to, matching ref:feature.text
@@ -581,23 +619,25 @@ mod tests {
         // Test when the cross-reference doesn't match any values
         let mut datatypes = HashMap::new();
 
-        datatypes.insert("features".to_string(), Datatype {
-            name: "features".to_string(),
-            values: vec![
-                DatatypeValue {
+        datatypes.insert(
+            "features".to_string(),
+            Datatype {
+                name: "features".to_string(),
+                values: vec![DatatypeValue {
                     text: "sharp".to_string(),
                     tags: HashMap::new(),
                     weight: 1.0,
-                },
-            ],
-            extends: None,
-            override_tags: HashMap::new(),
-        });
+                }],
+                extends: None,
+                override_tags: HashMap::new(),
+            },
+        );
 
-        datatypes.insert("adjectives".to_string(), Datatype {
-            name: "adjectives".to_string(),
-            values: vec![
-                DatatypeValue {
+        datatypes.insert(
+            "adjectives".to_string(),
+            Datatype {
+                name: "adjectives".to_string(),
+                values: vec![DatatypeValue {
                     text: "blue".to_string(),
                     tags: {
                         let mut tags = HashMap::new();
@@ -605,22 +645,25 @@ mod tests {
                         tags
                     },
                     weight: 1.0,
-                },
-            ],
-            extends: None,
-            override_tags: HashMap::new(),
-        });
+                }],
+                extends: None,
+                override_tags: HashMap::new(),
+            },
+        );
 
         let mut namespaces = HashMap::new();
-        namespaces.insert("test".to_string(), Namespace {
-            id: "test".to_string(),
-            datatypes,
-            prompt_sections: HashMap::new(),
-            separator_sets: HashMap::new(),
-            rules: HashMap::new(),
-            decisions: Vec::new(),
-            rulebooks: HashMap::new(), // M9
-        });
+        namespaces.insert(
+            "test".to_string(),
+            Namespace {
+                id: "test".to_string(),
+                datatypes,
+                prompt_sections: HashMap::new(),
+                separator_sets: HashMap::new(),
+                rules: HashMap::new(),
+                decisions: Vec::new(),
+                rulebooks: HashMap::new(), // M9
+            },
+        );
 
         let package = Package {
             id: "test.package".to_string(),
@@ -641,12 +684,19 @@ mod tests {
             "feature".to_string(),
             ("sharp".to_string(), {
                 let mut tags = HashMap::new();
-                tags.insert("applies_to".to_string(), serde_json::json!(["eyes", "claws"]));
+                tags.insert(
+                    "applies_to".to_string(),
+                    serde_json::json!(["eyes", "claws"]),
+                );
                 tags
-            })
+            }),
         );
         // This should fail because "blue" only applies to "wings", not "eyes" or "claws"
-        let result = selector.select_with_filter("adjectives", Some("ref:feature.text in tags.applies_to"), &selected);
+        let result = selector.select_with_filter(
+            "adjectives",
+            Some("ref:feature.text in tags.applies_to"),
+            &selected,
+        );
         assert!(result.is_err());
     }
 }

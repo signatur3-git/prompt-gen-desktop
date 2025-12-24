@@ -249,13 +249,18 @@ impl ExpressionParser {
             let parts: Vec<String> = ref_part.split('.').map(|s| s.to_string()).collect();
 
             if parts.is_empty() {
-                return Err(ParseError::UnexpectedToken("ref: requires a reference name".to_string()));
+                return Err(ParseError::UnexpectedToken(
+                    "ref: requires a reference name".to_string(),
+                ));
             }
 
             let ref_name = parts[0].clone();
             let field_path = parts[1..].to_vec();
 
-            let ref_expr = Expression::RefAccess { ref_name, field_path };
+            let ref_expr = Expression::RefAccess {
+                ref_name,
+                field_path,
+            };
 
             // Check for "in" operator
             if self.peek() == Some("in") {
@@ -263,9 +268,10 @@ impl ExpressionParser {
                 // Next should be tags.something
                 let tag_token = self.consume().ok_or(ParseError::UnexpectedEnd)?;
                 if !tag_token.starts_with("tags.") {
-                    return Err(ParseError::UnexpectedToken(
-                        format!("Expected 'tags.' after 'in', got '{}'", tag_token)
-                    ));
+                    return Err(ParseError::UnexpectedToken(format!(
+                        "Expected 'tags.' after 'in', got '{}'",
+                        tag_token
+                    )));
                 }
                 let list_tag = tag_token.strip_prefix("tags.").unwrap().to_string();
 
@@ -280,7 +286,10 @@ impl ExpressionParser {
 
         // Tag path (tags.something)
         if !token.starts_with("tags.") {
-            return Err(ParseError::UnexpectedToken(format!("Expected 'tags.' or 'ref:', got '{}'", token)));
+            return Err(ParseError::UnexpectedToken(format!(
+                "Expected 'tags.' or 'ref:', got '{}'",
+                token
+            )));
         }
 
         let tag_name = token.strip_prefix("tags.").unwrap().to_string();
@@ -316,7 +325,7 @@ impl ExpressionParser {
     fn parse_value(token: &str) -> Result<ComparisonValue> {
         // String literal
         if token.starts_with('"') && token.ends_with('"') {
-            let s = token[1..token.len()-1].to_string();
+            let s = token[1..token.len() - 1].to_string();
             return Ok(ComparisonValue::String(s));
         }
 
@@ -333,7 +342,10 @@ impl ExpressionParser {
             return Ok(ComparisonValue::Number(n));
         }
 
-        Err(ParseError::UnexpectedToken(format!("Invalid value: {}", token)))
+        Err(ParseError::UnexpectedToken(format!(
+            "Invalid value: {}",
+            token
+        )))
     }
 
     fn peek(&self) -> Option<&str> {
@@ -367,22 +379,26 @@ pub fn evaluate(expr: &Expression, tags: &HashMap<String, JsonValue>) -> bool {
 pub fn evaluate_with_context(
     expr: &Expression,
     tags: &HashMap<String, JsonValue>,
-    selected: &HashMap<String, (String, HashMap<String, JsonValue>)>
+    selected: &HashMap<String, (String, HashMap<String, JsonValue>)>,
 ) -> bool {
     match expr {
         Expression::And(left, right) => {
-            evaluate_with_context(left, tags, selected) && evaluate_with_context(right, tags, selected)
+            evaluate_with_context(left, tags, selected)
+                && evaluate_with_context(right, tags, selected)
         }
 
         Expression::Or(left, right) => {
-            evaluate_with_context(left, tags, selected) || evaluate_with_context(right, tags, selected)
+            evaluate_with_context(left, tags, selected)
+                || evaluate_with_context(right, tags, selected)
         }
 
-        Expression::Not(inner) => {
-            !evaluate_with_context(inner, tags, selected)
-        }
+        Expression::Not(inner) => !evaluate_with_context(inner, tags, selected),
 
-        Expression::Comparison { tag, operator, value } => {
+        Expression::Comparison {
+            tag,
+            operator,
+            value,
+        } => {
             if let Some(tag_value) = tags.get(tag) {
                 match (operator, value) {
                     (ComparisonOp::Equal, ComparisonValue::String(s)) => {
@@ -424,7 +440,10 @@ pub fn evaluate_with_context(
             }
         }
 
-        Expression::RefAccess { ref_name, field_path } => {
+        Expression::RefAccess {
+            ref_name,
+            field_path,
+        } => {
             // Look up the selected reference
             if let Some((text, ref_tags)) = selected.get(ref_name) {
                 if field_path.is_empty() {
@@ -460,14 +479,21 @@ pub fn evaluate_with_context(
         Expression::InList { value, list_tag } => {
             // Evaluate the value expression to get a string
             let ref_value = match value.as_ref() {
-                Expression::RefAccess { ref_name, field_path } => {
+                Expression::RefAccess {
+                    ref_name,
+                    field_path,
+                } => {
                     if let Some((text, ref_tags)) = selected.get(ref_name) {
-                        if field_path.is_empty() || (field_path.len() == 1 && field_path[0] == "text") {
+                        if field_path.is_empty()
+                            || (field_path.len() == 1 && field_path[0] == "text")
+                        {
                             Some(text.clone())
                         } else if field_path.len() >= 2 && field_path[0] == "tags" {
                             // Get tag value as string
                             let tag_name = &field_path[1];
-                            ref_tags.get(tag_name).and_then(|v| v.as_str().map(|s| s.to_string()))
+                            ref_tags
+                                .get(tag_name)
+                                .and_then(|v| v.as_str().map(|s| s.to_string()))
                         } else {
                             None
                         }
@@ -475,7 +501,7 @@ pub fn evaluate_with_context(
                         None
                     }
                 }
-                _ => None
+                _ => None,
             };
 
             if let Some(ref_val) = ref_value {
@@ -484,15 +510,13 @@ pub fn evaluate_with_context(
                     match tag_value {
                         JsonValue::Array(arr) => {
                             // Check if any array element matches
-                            arr.iter().any(|item| {
-                                item.as_str() == Some(&ref_val)
-                            })
+                            arr.iter().any(|item| item.as_str() == Some(&ref_val))
                         }
                         JsonValue::String(s) => {
                             // Single string match
                             s == &ref_val
                         }
-                        _ => false
+                        _ => false,
                     }
                 } else {
                     false
@@ -597,7 +621,11 @@ mod tests {
         let expr = ExpressionParser::parse("ref:body_part.text").unwrap();
         assert!(matches!(expr, Expression::RefAccess { .. }));
 
-        if let Expression::RefAccess { ref_name, field_path } = expr {
+        if let Expression::RefAccess {
+            ref_name,
+            field_path,
+        } = expr
+        {
             assert_eq!(ref_name, "body_part");
             assert_eq!(field_path, vec!["text"]);
         }
@@ -626,7 +654,10 @@ mod tests {
         let mut selected = HashMap::new();
         let mut body_part_tags = HashMap::new();
         body_part_tags.insert("type".to_string(), json!("body_part"));
-        selected.insert("body_part".to_string(), ("skin".to_string(), body_part_tags));
+        selected.insert(
+            "body_part".to_string(),
+            ("skin".to_string(), body_part_tags),
+        );
 
         // Parse and evaluate: ref:body_part.text in tags.applies_to
         let expr = ExpressionParser::parse("ref:body_part.text in tags.applies_to").unwrap();
@@ -636,7 +667,10 @@ mod tests {
         assert!(result);
 
         // Now test with body_part = "beard" (not in applies_to)
-        selected.insert("body_part".to_string(), ("beard".to_string(), HashMap::new()));
+        selected.insert(
+            "body_part".to_string(),
+            ("beard".to_string(), HashMap::new()),
+        );
         let result = evaluate_with_context(&expr, &tags, &selected);
 
         // Should be false because "beard" is not in ["skin", "face"]
@@ -678,4 +712,3 @@ mod tests {
         assert!(evaluate(&expr, &tags));
     }
 }
-

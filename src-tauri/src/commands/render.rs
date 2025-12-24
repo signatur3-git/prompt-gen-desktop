@@ -16,7 +16,8 @@ pub async fn render_prompt(
     seed: u64,
 ) -> Result<RenderResult, String> {
     let renderer = Renderer::new(&package, seed);
-    renderer.render(&promptsection)
+    renderer
+        .render(&promptsection)
         .map_err(|e| format!("Render error: {}", e))
 }
 
@@ -29,7 +30,8 @@ pub async fn render_prompt_with_dependencies(
     seed: u64,
 ) -> Result<RenderResult, String> {
     let renderer = Renderer::new_with_dependencies(&package, &dependencies, seed);
-    renderer.render(&promptsection)
+    renderer
+        .render(&promptsection)
         .map_err(|e| format!("Render error: {}", e))
 }
 
@@ -41,7 +43,8 @@ pub async fn render_from_rulebook(
     seed: u64,
 ) -> Result<RenderResult, String> {
     let renderer = Renderer::new(&package, seed);
-    renderer.render_from_rulebook(&rulebook_ref)
+    renderer
+        .render_from_rulebook(&rulebook_ref)
         .map_err(|e| format!("Render error: {}", e))
 }
 
@@ -54,7 +57,8 @@ pub async fn render_from_rulebook_with_dependencies(
     seed: u64,
 ) -> Result<RenderResult, String> {
     let renderer = Renderer::new_with_dependencies(&package, &dependencies, seed);
-    renderer.render_from_rulebook(&rulebook_ref)
+    renderer
+        .render_from_rulebook(&rulebook_ref)
         .map_err(|e| format!("Render error: {}", e))
 }
 
@@ -73,7 +77,9 @@ pub async fn render_from_rulebook_batch(
         let seed = start_seed.wrapping_add(i as u64);
         let renderer = Renderer::new(&package, seed);
 
-        match renderer.render_from_rulebook_with_options(&rulebook_ref, Some(&mut used_entry_points)) {
+        match renderer
+            .render_from_rulebook_with_options(&rulebook_ref, Some(&mut used_entry_points))
+        {
             Ok(result) => {
                 results.push(BatchRenderResult {
                     output: result.output,
@@ -106,7 +112,9 @@ pub async fn render_from_rulebook_batch_with_dependencies(
         let seed = start_seed.wrapping_add(i as u64);
         let renderer = Renderer::new_with_dependencies(&package, &dependencies, seed);
 
-        match renderer.render_from_rulebook_with_options(&rulebook_ref, Some(&mut used_entry_points)) {
+        match renderer
+            .render_from_rulebook_with_options(&rulebook_ref, Some(&mut used_entry_points))
+        {
             Ok(result) => {
                 results.push(BatchRenderResult {
                     output: result.output,
@@ -144,4 +152,3 @@ pub use crate::renderer::engine::RenderResult;
 mod tests {
     // Tests will use the renderer tests directly
 }
-

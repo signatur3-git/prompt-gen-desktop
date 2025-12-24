@@ -46,7 +46,10 @@ impl Rulebook {
         }
 
         if self.entry_points.is_empty() {
-            return Err(format!("Rulebook '{}' must have at least one entry point", self.name));
+            return Err(format!(
+                "Rulebook '{}' must have at least one entry point",
+                self.name
+            ));
         }
 
         // Validate all weights are positive
@@ -112,18 +115,19 @@ mod tests {
         let rulebook = Rulebook {
             name: "".to_string(),
             description: "".to_string(),
-            entry_points: vec![
-                EntryPoint {
-                    prompt_section: "test:scene1".to_string(),
-                    weight: 1.0,
-                },
-            ],
+            entry_points: vec![EntryPoint {
+                prompt_section: "test:scene1".to_string(),
+                weight: 1.0,
+            }],
             batch_variety: false,
             context_defaults: HashMap::new(),
         };
 
         assert!(rulebook.validate().is_err());
-        assert!(rulebook.validate().unwrap_err().contains("name cannot be empty"));
+        assert!(rulebook
+            .validate()
+            .unwrap_err()
+            .contains("name cannot be empty"));
     }
 
     #[test]
@@ -137,7 +141,10 @@ mod tests {
         };
 
         assert!(rulebook.validate().is_err());
-        assert!(rulebook.validate().unwrap_err().contains("at least one entry point"));
+        assert!(rulebook
+            .validate()
+            .unwrap_err()
+            .contains("at least one entry point"));
     }
 
     #[test]
@@ -145,12 +152,10 @@ mod tests {
         let rulebook = Rulebook {
             name: "test".to_string(),
             description: "".to_string(),
-            entry_points: vec![
-                EntryPoint {
-                    prompt_section: "test:scene1".to_string(),
-                    weight: -1.0,
-                },
-            ],
+            entry_points: vec![EntryPoint {
+                prompt_section: "test:scene1".to_string(),
+                weight: -1.0,
+            }],
             batch_variety: false,
             context_defaults: HashMap::new(),
         };
@@ -179,7 +184,9 @@ mod tests {
         };
 
         assert!(rulebook.validate().is_err());
-        assert!(rulebook.validate().unwrap_err().contains("duplicate entry point"));
+        assert!(rulebook
+            .validate()
+            .unwrap_err()
+            .contains("duplicate entry point"));
     }
 }
-

@@ -4,8 +4,8 @@
 
 use crate::context::Context;
 use crate::core::{Package, PromptSection};
+use crate::renderer::selector::{SelectedValue, Selector};
 use crate::renderer::template_parser::{Template, TemplateToken};
-use crate::renderer::selector::{Selector, SelectedValue};
 use crate::rules::RulesProcessor;
 use std::collections::HashMap;
 use thiserror::Error;
@@ -68,7 +68,7 @@ impl<'a> Renderer<'a> {
         Renderer {
             package,
             dependencies: None, // No dependencies
-            seed
+            seed,
         }
     }
 
@@ -77,9 +77,13 @@ impl<'a> Renderer<'a> {
     pub fn new_with_dependencies(
         package: &'a Package,
         dependencies: &'a HashMap<String, Package>,
-        seed: u64
+        seed: u64,
     ) -> Self {
-        Renderer { package, dependencies: Some(dependencies), seed }
+        Renderer {
+            package,
+            dependencies: Some(dependencies),
+            seed,
+        }
     }
 
     /// Render a promptsection by name
@@ -120,7 +124,7 @@ impl<'a> Renderer<'a> {
         if depth > MAX_RECURSION_DEPTH {
             return Err(RenderError::MaxRecursionDepth(
                 MAX_RECURSION_DEPTH,
-                promptsection_ref.to_string()
+                promptsection_ref.to_string(),
             ));
         }
 
@@ -143,14 +147,18 @@ impl<'a> Renderer<'a> {
         // Three phases
         let selected = self.phase_1_selection(promptsection, depth)?;
         self.phase_2_enrichment(&mut context, &selected, namespace)?;
-        let output = self.phase_3_rendering(&promptsection.template, promptsection, &selected, &context, namespace)?;
+        let output = self.phase_3_rendering(
+            &promptsection.template,
+            promptsection,
+            &selected,
+            &context,
+            namespace,
+        )?;
 
         // Build result - include selected values (flatten Vec to first item for display)
         let mut selected_values: HashMap<String, String> = selected
             .iter()
-            .filter_map(|(k, values)| {
-                values.first().map(|v| (k.clone(), v.text.clone()))
-            })
+            .filter_map(|(k, values)| values.first().map(|v| (k.clone(), v.text.clone())))
             .collect();
 
         // Add context values from all scopes (with "context:" prefix to distinguish them)
@@ -158,10 +166,7 @@ impl<'a> Renderer<'a> {
         for scope_name in &["prompt", "global"] {
             if let Some(scope) = context.get_scope(scope_name) {
                 for (key, value) in scope {
-                    selected_values.insert(
-                        format!("context:{}", key),
-                        value.to_string()
-                    );
+                    selected_values.insert(format!("context:{}", key), value.to_string());
                 }
             }
         }
@@ -178,7 +183,11 @@ impl<'a> Renderer<'a> {
     /// M5 Phase 1: Can recursively render nested promptsections
     /// M5 Phase 3+4: Can select multiple values per reference
     /// M8.5 Blocker 1: Cross-reference filtering with dependency ordering
-    fn phase_1_selection(&self, promptsection: &PromptSection, depth: usize) -> Result<HashMap<String, Vec<SelectedValue>>> {
+    fn phase_1_selection(
+        &self,
+        promptsection: &PromptSection,
+        depth: usize,
+    ) -> Result<HashMap<String, Vec<SelectedValue>>> {
         // Parse template
         let parsed = Template::parse(&promptsection.template)?;
 
@@ -194,17 +203,20 @@ impl<'a> Renderer<'a> {
 
         // M8.5: Build selection context for cross-reference filtering
         // Maps ref_name -> (text, tags) for already-selected values
-        let mut selection_context: HashMap<String, (String, HashMap<String, serde_json::Value>)> = HashMap::new();
+        let mut selection_context: HashMap<String, (String, HashMap<String, serde_json::Value>)> =
+            HashMap::new();
 
         // Select value(s) for each reference in dependency order
         let mut selected = HashMap::new();
 
         for ref_name in selection_order {
             // Look up the reference definition to get the target and parameters
-            let reference = promptsection.references.get(&ref_name)
-                .ok_or_else(|| RenderError::ReferenceNotSelected(
-                    format!("Reference '{}' not defined in promptsection", ref_name)
-                ))?;
+            let reference = promptsection.references.get(&ref_name).ok_or_else(|| {
+                RenderError::ReferenceNotSelected(format!(
+                    "Reference '{}' not defined in promptsection",
+                    ref_name
+                ))
+            })?;
 
             // Skip context references - they'll be populated by Rules during Phase 2
             if reference.target.starts_with("context:") {
@@ -247,9 +259,19 @@ impl<'a> Renderer<'a> {
 
                 // M8.5: Select values with cross-reference filtering support
                 let values = if count > 1 {
-                    selector.select_multiple(&reference.target, count, filter, unique, &selection_context)?
+                    selector.select_multiple(
+                        &reference.target,
+                        count,
+                        filter,
+                        unique,
+                        &selection_context,
+                    )?
                 } else if count == 1 {
-                    vec![selector.select_with_filter(&reference.target, filter, &selection_context)?]
+                    vec![selector.select_with_filter(
+                        &reference.target,
+                        filter,
+                        &selection_context,
+                    )?]
                 } else {
                     // count == 0, return empty vec
                     Vec::new()
@@ -259,7 +281,7 @@ impl<'a> Renderer<'a> {
                 if let Some(first_value) = values.first() {
                     selection_context.insert(
                         ref_name.clone(),
-                        (first_value.text.clone(), first_value.tags.clone())
+                        (first_value.text.clone(), first_value.tags.clone()),
                     );
                 }
 
@@ -274,7 +296,11 @@ impl<'a> Renderer<'a> {
     ///
     /// M8.5 Blocker 1 Part 2: Dependency ordering
     /// References with filters that depend on other references must be selected after those references
-    fn compute_selection_order(&self, promptsection: &PromptSection, parsed: &Template) -> Result<Vec<String>> {
+    fn compute_selection_order(
+        &self,
+        promptsection: &PromptSection,
+        parsed: &Template,
+    ) -> Result<Vec<String>> {
         use crate::renderer::tag_expression::ExpressionParser;
 
         // Get all reference names from template (in template order)
@@ -300,7 +326,9 @@ impl<'a> Renderer<'a> {
                 // Extract dependencies from filter
                 if let Some(filter_expr) = &reference.filter {
                     if let Ok(parsed_filter) = ExpressionParser::parse(filter_expr) {
-                        let deps = crate::renderer::tag_expression::extract_ref_dependencies(&parsed_filter);
+                        let deps = crate::renderer::tag_expression::extract_ref_dependencies(
+                            &parsed_filter,
+                        );
                         if !deps.is_empty() {
                             dependencies.insert(ref_name.clone(), deps);
                         }
@@ -317,7 +345,11 @@ impl<'a> Renderer<'a> {
 
     /// Topological sort using Kahn's algorithm
     /// Detects circular dependencies
-    fn topological_sort(&self, nodes: &[String], dependencies: &HashMap<String, Vec<String>>) -> Result<Vec<String>> {
+    fn topological_sort(
+        &self,
+        nodes: &[String],
+        dependencies: &HashMap<String, Vec<String>>,
+    ) -> Result<Vec<String>> {
         let mut result = Vec::new();
         let mut in_degree: HashMap<String, usize> = HashMap::new();
 
@@ -358,7 +390,9 @@ impl<'a> Renderer<'a> {
                     if *degree == 0 {
                         queue.push(dependent.clone());
                         // Re-sort to maintain determinism
-                        queue.sort_by_key(|name| nodes.iter().position(|n| n == name).unwrap_or(usize::MAX));
+                        queue.sort_by_key(|name| {
+                            nodes.iter().position(|n| n == name).unwrap_or(usize::MAX)
+                        });
                     }
                 }
             }
@@ -374,9 +408,10 @@ impl<'a> Renderer<'a> {
                 .collect();
 
             return Err(RenderError::Selection(
-                crate::renderer::selector::SelectionError::InvalidReference(
-                    format!("Circular dependency detected in references: {}", unprocessed.join(", "))
-                )
+                crate::renderer::selector::SelectionError::InvalidReference(format!(
+                    "Circular dependency detected in references: {}",
+                    unprocessed.join(", ")
+                )),
             ));
         }
 
@@ -394,15 +429,13 @@ impl<'a> Renderer<'a> {
         &self,
         context: &mut Context,
         selected: &HashMap<String, Vec<SelectedValue>>,
-        _namespace: &crate::core::Namespace  // Kept for compatibility but unused now
+        _namespace: &crate::core::Namespace, // Kept for compatibility but unused now
     ) -> Result<()> {
         // M5: Convert Vec<SelectedValue> to HashMap<String, SelectedValue> for rules
         // Rules only see the first selected value
         let single_selected: HashMap<String, SelectedValue> = selected
             .iter()
-            .filter_map(|(key, values)| {
-                values.first().map(|v| (key.clone(), v.clone()))
-            })
+            .filter_map(|(key, values)| values.first().map(|v| (key.clone(), v.clone())))
             .collect();
 
         println!("\n=== Phase 2: Enrichment ===");
@@ -413,8 +446,12 @@ impl<'a> Renderer<'a> {
             for (dep_id, dep_package) in dependencies {
                 for (namespace_id, namespace) in &dep_package.namespaces {
                     if !namespace.rules.is_empty() {
-                        println!("Executing {} rule(s) from dependency {}.{}",
-                                 namespace.rules.len(), dep_id, namespace_id);
+                        println!(
+                            "Executing {} rule(s) from dependency {}.{}",
+                            namespace.rules.len(),
+                            dep_id,
+                            namespace_id
+                        );
 
                         let mut rules_processor = RulesProcessor::new(context, &single_selected);
                         rules_processor.execute_rules(&namespace.rules)?;
@@ -427,7 +464,11 @@ impl<'a> Renderer<'a> {
         // This makes rules package-wide instead of namespace-scoped
         for (namespace_id, namespace) in &self.package.namespaces {
             if !namespace.rules.is_empty() {
-                println!("Executing {} rule(s) from namespace: {}", namespace.rules.len(), namespace_id);
+                println!(
+                    "Executing {} rule(s) from namespace: {}",
+                    namespace.rules.len(),
+                    namespace_id
+                );
 
                 // M4: Execute Rules from this namespace
                 let mut rules_processor = RulesProcessor::new(context, &single_selected);
@@ -465,7 +506,9 @@ impl<'a> Renderer<'a> {
                     // Try to get from selected values first
                     if let Some(values) = selected.get(&ref_name) {
                         // M5: Get separator from YAML Reference definition
-                        let separator_ref = promptsection.references.get(&ref_name)
+                        let separator_ref = promptsection
+                            .references
+                            .get(&ref_name)
                             .and_then(|r| r.separator.as_ref());
 
                         // M5: Format multiple values with separator
@@ -475,15 +518,24 @@ impl<'a> Renderer<'a> {
                                 // Find separator set in namespace
                                 if let Some(sep_set) = namespace.separator_sets.get(sep_ref) {
                                     // Use separator set to format
-                                    let texts: Vec<String> = values.iter().map(|v| v.text.clone()).collect();
+                                    let texts: Vec<String> =
+                                        values.iter().map(|v| v.text.clone()).collect();
                                     sep_set.format(&texts)
                                 } else {
                                     // Separator not found, fall back to space
-                                    values.iter().map(|v| v.text.as_str()).collect::<Vec<_>>().join(" ")
+                                    values
+                                        .iter()
+                                        .map(|v| v.text.as_str())
+                                        .collect::<Vec<_>>()
+                                        .join(" ")
                                 }
                             } else {
                                 // No separator specified, use space
-                                values.iter().map(|v| v.text.as_str()).collect::<Vec<_>>().join(" ")
+                                values
+                                    .iter()
+                                    .map(|v| v.text.as_str())
+                                    .collect::<Vec<_>>()
+                                    .join(" ")
                             }
                         } else if values.len() == 1 {
                             // Single value, just use it
@@ -520,7 +572,9 @@ impl<'a> Renderer<'a> {
             (parts[0].to_string(), parts[1].to_string())
         } else {
             // Use first namespace
-            let first_ns = self.package.namespaces
+            let first_ns = self
+                .package
+                .namespaces
                 .keys()
                 .next()
                 .ok_or_else(|| RenderError::PromptSectionNotFound(reference.to_string()))?;
@@ -558,7 +612,9 @@ impl<'a> Renderer<'a> {
             (parts[0].to_string(), parts[1].to_string())
         } else {
             // Use first namespace
-            let first_ns = self.package.namespaces
+            let first_ns = self
+                .package
+                .namespaces
                 .keys()
                 .next()
                 .ok_or_else(|| RenderError::PromptSectionNotFound(reference.to_string()))?;
@@ -624,8 +680,11 @@ impl<'a> Renderer<'a> {
         let rulebook = self.find_rulebook(&namespace_name, &rulebook_name)?;
 
         // Validate rulebook
-        rulebook.validate()
-            .map_err(|e| RenderError::Selection(crate::renderer::selector::SelectionError::InvalidReference(e)))?;
+        rulebook.validate().map_err(|e| {
+            RenderError::Selection(crate::renderer::selector::SelectionError::InvalidReference(
+                e,
+            ))
+        })?;
 
         // Select entry point
         let entry_point = self.select_entry_point(rulebook, used_entry_points)?;
@@ -654,21 +713,24 @@ impl<'a> Renderer<'a> {
         use crate::renderer::seeded_random::SeededRandom;
 
         // If batch variety is enabled and we have tracking, filter out used entry points
-        let available_points: Vec<&crate::core::rulebook::EntryPoint> = if let Some(used) = used_entry_points.as_ref() {
-            if rulebook.batch_variety {
-                rulebook.entry_points
-                    .iter()
-                    .filter(|ep| !used.contains(&ep.prompt_section))
-                    .collect()
+        let available_points: Vec<&crate::core::rulebook::EntryPoint> =
+            if let Some(used) = used_entry_points.as_ref() {
+                if rulebook.batch_variety {
+                    rulebook
+                        .entry_points
+                        .iter()
+                        .filter(|ep| !used.contains(&ep.prompt_section))
+                        .collect()
+                } else {
+                    rulebook.entry_points.iter().collect()
+                }
             } else {
                 rulebook.entry_points.iter().collect()
-            }
-        } else {
-            rulebook.entry_points.iter().collect()
-        };
+            };
 
         // If we've used all entry points, reset and use all of them
-        let points_to_use: Vec<&crate::core::rulebook::EntryPoint> = if available_points.is_empty() {
+        let points_to_use: Vec<&crate::core::rulebook::EntryPoint> = if available_points.is_empty()
+        {
             rulebook.entry_points.iter().collect()
         } else {
             available_points
@@ -694,14 +756,21 @@ impl<'a> Renderer<'a> {
 
     /// Find a rulebook by reference
     #[allow(dead_code)] // Used internally by rulebook rendering
-    fn find_rulebook(&self, namespace: &str, name: &str) -> Result<&crate::core::rulebook::Rulebook> {
-        let ns = self.package.namespaces
-            .get(namespace)
-            .ok_or_else(|| RenderError::PromptSectionNotFound(format!("Namespace not found: {}", namespace)))?;
+    fn find_rulebook(
+        &self,
+        namespace: &str,
+        name: &str,
+    ) -> Result<&crate::core::rulebook::Rulebook> {
+        let ns = self.package.namespaces.get(namespace).ok_or_else(|| {
+            RenderError::PromptSectionNotFound(format!("Namespace not found: {}", namespace))
+        })?;
 
-        ns.rulebooks
-            .get(name)
-            .ok_or_else(|| RenderError::PromptSectionNotFound(format!("Rulebook not found: {}:{}", namespace, name)))
+        ns.rulebooks.get(name).ok_or_else(|| {
+            RenderError::PromptSectionNotFound(format!(
+                "Rulebook not found: {}:{}",
+                namespace, name
+            ))
+        })
     }
 
     /// Parse a rulebook reference into namespace and name
@@ -712,18 +781,19 @@ impl<'a> Renderer<'a> {
             let parts: Vec<&str> = reference.split(':').collect();
             if parts.len() != 2 {
                 return Err(RenderError::Selection(
-                    crate::renderer::selector::SelectionError::InvalidReference(reference.to_string())
+                    crate::renderer::selector::SelectionError::InvalidReference(
+                        reference.to_string(),
+                    ),
                 ));
             }
             Ok((parts[0].to_string(), parts[1].to_string()))
         } else {
             // Use first namespace as default
-            let first_namespace = self.package.namespaces
-                .keys()
-                .next()
-                .ok_or_else(|| RenderError::Selection(
-                    crate::renderer::selector::SelectionError::InvalidReference("No namespaces in package".to_string())
-                ))?;
+            let first_namespace = self.package.namespaces.keys().next().ok_or_else(|| {
+                RenderError::Selection(crate::renderer::selector::SelectionError::InvalidReference(
+                    "No namespaces in package".to_string(),
+                ))
+            })?;
 
             Ok((first_namespace.clone(), reference.to_string()))
         }
@@ -733,84 +803,102 @@ impl<'a> Renderer<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::{Namespace, Datatype, DatatypeValue, PackageMetadata, Reference};
+    use crate::core::{Datatype, DatatypeValue, Namespace, PackageMetadata, Reference};
 
     fn create_test_package() -> Package {
         let mut datatypes = HashMap::new();
 
         // Colors
-        datatypes.insert("colors".to_string(), Datatype {
-            name: "colors".to_string(),
-            values: vec![
-                DatatypeValue {
-                    text: "red".to_string(),
-                    tags: HashMap::new(),
-                    weight: 1.0,
-                },
-                DatatypeValue {
-                    text: "blue".to_string(),
-                    tags: HashMap::new(),
-                    weight: 1.0,
-                },
-            ],
-            extends: None,
-            override_tags: HashMap::new(),
-        });
+        datatypes.insert(
+            "colors".to_string(),
+            Datatype {
+                name: "colors".to_string(),
+                values: vec![
+                    DatatypeValue {
+                        text: "red".to_string(),
+                        tags: HashMap::new(),
+                        weight: 1.0,
+                    },
+                    DatatypeValue {
+                        text: "blue".to_string(),
+                        tags: HashMap::new(),
+                        weight: 1.0,
+                    },
+                ],
+                extends: None,
+                override_tags: HashMap::new(),
+            },
+        );
 
         // Objects
-        datatypes.insert("objects".to_string(), Datatype {
-            name: "objects".to_string(),
-            values: vec![
-                DatatypeValue {
-                    text: "ball".to_string(),
-                    tags: HashMap::new(),
-                    weight: 1.0,
-                },
-                DatatypeValue {
-                    text: "apple".to_string(),
-                    tags: HashMap::new(),
-                    weight: 1.0,
-                },
-            ],
-            extends: None,
-            override_tags: HashMap::new(),
-        });
+        datatypes.insert(
+            "objects".to_string(),
+            Datatype {
+                name: "objects".to_string(),
+                values: vec![
+                    DatatypeValue {
+                        text: "ball".to_string(),
+                        tags: HashMap::new(),
+                        weight: 1.0,
+                    },
+                    DatatypeValue {
+                        text: "apple".to_string(),
+                        tags: HashMap::new(),
+                        weight: 1.0,
+                    },
+                ],
+                extends: None,
+                override_tags: HashMap::new(),
+            },
+        );
 
         let mut prompt_sections = HashMap::new();
         let mut references = HashMap::new();
-        references.insert("color".to_string(), Reference {
-            target: "test:colors".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
-        references.insert("object".to_string(), Reference {
-            target: "test:objects".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        references.insert(
+            "color".to_string(),
+            Reference {
+                target: "test:colors".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            },
+        );
+        references.insert(
+            "object".to_string(),
+            Reference {
+                target: "test:objects".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            },
+        );
 
-        prompt_sections.insert("simple".to_string(), PromptSection {
-            name: "simple".to_string(),
-            template: "A {color} {object}".to_string(),
-            references,
-        });
+        prompt_sections.insert(
+            "simple".to_string(),
+            PromptSection {
+                name: "simple".to_string(),
+                template: "A {color} {object}".to_string(),
+                references,
+            },
+        );
 
         let mut namespaces = HashMap::new();
-        namespaces.insert("test".to_string(), Namespace {
-            id: "test".to_string(),
-            datatypes,
-            prompt_sections,
-            separator_sets: HashMap::new(),
-            rules: HashMap::new(),
-            decisions: Vec::new(),
-            rulebooks: HashMap::new(), // M9: Added rulebooks
-        });
+        namespaces.insert(
+            "test".to_string(),
+            Namespace {
+                id: "test".to_string(),
+                datatypes,
+                prompt_sections,
+                separator_sets: HashMap::new(),
+                rules: HashMap::new(),
+                decisions: Vec::new(),
+                rulebooks: HashMap::new(), // M9: Added rulebooks
+            },
+        );
 
         Package {
             id: "test.package".to_string(),
@@ -870,7 +958,7 @@ mod tests {
 
     #[test]
     fn test_rulebook_weighted_selection() {
-        use crate::core::rulebook::{Rulebook, EntryPoint};
+        use crate::core::rulebook::{EntryPoint, Rulebook};
 
         let mut package = create_test_package();
 
@@ -878,17 +966,16 @@ mod tests {
         let rulebook = Rulebook {
             name: "test_rulebook".to_string(),
             description: "Test Rulebook".to_string(),
-            entry_points: vec![
-                EntryPoint {
-                    prompt_section: "test:simple".to_string(),
-                    weight: 1.0,
-                },
-            ],
+            entry_points: vec![EntryPoint {
+                prompt_section: "test:simple".to_string(),
+                weight: 1.0,
+            }],
             batch_variety: false,
             context_defaults: HashMap::new(),
         };
 
-        package.namespaces
+        package
+            .namespaces
             .get_mut("test")
             .unwrap()
             .rulebooks
@@ -903,30 +990,37 @@ mod tests {
 
     #[test]
     fn test_rulebook_batch_variety() {
-        use crate::core::rulebook::{Rulebook, EntryPoint};
+        use crate::core::rulebook::{EntryPoint, Rulebook};
 
         let mut package = create_test_package();
 
         // Add another promptsection
         let mut refs2 = HashMap::new();
-        refs2.insert("color".to_string(), Reference {
-            target: "test:colors".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        refs2.insert(
+            "color".to_string(),
+            Reference {
+                target: "test:colors".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            },
+        );
 
-        package.namespaces
+        package
+            .namespaces
             .get_mut("test")
             .unwrap()
             .prompt_sections
-            .insert("simple2".to_string(), PromptSection {
-                name: "simple2".to_string(),
-                template: "{color} thing".to_string(),
-                references: refs2,
-            });
+            .insert(
+                "simple2".to_string(),
+                PromptSection {
+                    name: "simple2".to_string(),
+                    template: "{color} thing".to_string(),
+                    references: refs2,
+                },
+            );
 
         // Add a rulebook with multiple entry points
         let rulebook = Rulebook {
@@ -946,7 +1040,8 @@ mod tests {
             context_defaults: HashMap::new(),
         };
 
-        package.namespaces
+        package
+            .namespaces
             .get_mut("test")
             .unwrap()
             .rulebooks
@@ -956,8 +1051,12 @@ mod tests {
 
         // Test batch variety - should select different entry points
         let mut used = Vec::new();
-        let _result1 = renderer.render_from_rulebook_with_options("variety_test", Some(&mut used)).unwrap();
-        let _result2 = renderer.render_from_rulebook_with_options("variety_test", Some(&mut used)).unwrap();
+        let _result1 = renderer
+            .render_from_rulebook_with_options("variety_test", Some(&mut used))
+            .unwrap();
+        let _result2 = renderer
+            .render_from_rulebook_with_options("variety_test", Some(&mut used))
+            .unwrap();
 
         // Should have tracked two entries
         assert_eq!(used.len(), 2);
@@ -965,31 +1064,38 @@ mod tests {
 
     #[test]
     fn test_rulebook_context_defaults() {
-        use crate::core::rulebook::{Rulebook, EntryPoint};
+        use crate::core::rulebook::{EntryPoint, Rulebook};
 
         let mut package = create_test_package();
 
         // Add a promptsection that uses context values
         // Template references context via rules
         let mut refs = HashMap::new();
-        refs.insert("item".to_string(), Reference {
-            target: "test:objects".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        refs.insert(
+            "item".to_string(),
+            Reference {
+                target: "test:objects".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            },
+        );
 
-        package.namespaces
+        package
+            .namespaces
             .get_mut("test")
             .unwrap()
             .prompt_sections
-            .insert("with_context".to_string(), PromptSection {
-                name: "with_context".to_string(),
-                template: "{item}".to_string(),
-                references: refs,
-            });
+            .insert(
+                "with_context".to_string(),
+                PromptSection {
+                    name: "with_context".to_string(),
+                    template: "{item}".to_string(),
+                    references: refs,
+                },
+            );
 
         // Add a rulebook with context defaults
         let mut context_defaults = HashMap::new();
@@ -999,17 +1105,16 @@ mod tests {
         let rulebook = Rulebook {
             name: "context_test".to_string(),
             description: "Test context defaults".to_string(),
-            entry_points: vec![
-                EntryPoint {
-                    prompt_section: "test:with_context".to_string(),
-                    weight: 1.0,
-                },
-            ],
+            entry_points: vec![EntryPoint {
+                prompt_section: "test:with_context".to_string(),
+                weight: 1.0,
+            }],
             batch_variety: false,
             context_defaults,
         };
 
-        package.namespaces
+        package
+            .namespaces
             .get_mut("test")
             .unwrap()
             .rulebooks
@@ -1023,37 +1128,47 @@ mod tests {
 
         // Context values should be in the selected_values
         assert!(result.selected_values.contains_key("context:test_key"));
-        assert_eq!(result.selected_values.get("context:test_key").unwrap(), "test_value");
+        assert_eq!(
+            result.selected_values.get("context:test_key").unwrap(),
+            "test_value"
+        );
         assert!(result.selected_values.contains_key("context:number"));
         assert_eq!(result.selected_values.get("context:number").unwrap(), "42");
     }
 
     #[test]
     fn test_rulebook_context_with_scope() {
-        use crate::core::rulebook::{Rulebook, EntryPoint};
+        use crate::core::rulebook::{EntryPoint, Rulebook};
 
         let mut package = create_test_package();
 
         // Add a promptsection
         let mut refs = HashMap::new();
-        refs.insert("color".to_string(), Reference {
-            target: "test:colors".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        refs.insert(
+            "color".to_string(),
+            Reference {
+                target: "test:colors".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            },
+        );
 
-        package.namespaces
+        package
+            .namespaces
             .get_mut("test")
             .unwrap()
             .prompt_sections
-            .insert("scoped".to_string(), PromptSection {
-                name: "scoped".to_string(),
-                template: "{color} item".to_string(),
-                references: refs,
-            });
+            .insert(
+                "scoped".to_string(),
+                PromptSection {
+                    name: "scoped".to_string(),
+                    template: "{color} item".to_string(),
+                    references: refs,
+                },
+            );
 
         // Add a rulebook with scoped context defaults
         let mut context_defaults = HashMap::new();
@@ -1063,17 +1178,16 @@ mod tests {
         let rulebook = Rulebook {
             name: "scoped_test".to_string(),
             description: "Test scoped context".to_string(),
-            entry_points: vec![
-                EntryPoint {
-                    prompt_section: "test:scoped".to_string(),
-                    weight: 1.0,
-                },
-            ],
+            entry_points: vec![EntryPoint {
+                prompt_section: "test:scoped".to_string(),
+                weight: 1.0,
+            }],
             batch_variety: false,
             context_defaults,
         };
 
-        package.namespaces
+        package
+            .namespaces
             .get_mut("test")
             .unwrap()
             .rulebooks
@@ -1087,9 +1201,14 @@ mod tests {
 
         // Both prompt and global scope values should be present
         assert!(result.selected_values.contains_key("context:style"));
-        assert_eq!(result.selected_values.get("context:style").unwrap(), "fantasy");
+        assert_eq!(
+            result.selected_values.get("context:style").unwrap(),
+            "fantasy"
+        );
         assert!(result.selected_values.contains_key("context:world"));
-        assert_eq!(result.selected_values.get("context:world").unwrap(), "middle_earth");
+        assert_eq!(
+            result.selected_values.get("context:world").unwrap(),
+            "middle_earth"
+        );
     }
 }
-

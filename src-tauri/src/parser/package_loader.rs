@@ -2,9 +2,9 @@
 // Implements serde-based deserialization with validation
 // M8.5 Blocker 2 Phase 2: Load packages with dependencies
 
-use crate::core::{Package};
-use std::path::{Path, PathBuf};
+use crate::core::Package;
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -66,10 +66,10 @@ pub fn load_package_with_dependencies<P: AsRef<Path>>(path: P) -> Result<LoadedP
     // Set up search paths
     let package_dir = path.parent().unwrap_or(Path::new("."));
     let search_paths = vec![
-        package_dir.join("dependencies"),  // dependencies/ subdirectory
-        package_dir.to_path_buf(),         // package directory
-        PathBuf::from("./test-packages"),  // test-packages directory
-        PathBuf::from("./packages"),       // packages directory
+        package_dir.join("dependencies"), // dependencies/ subdirectory
+        package_dir.to_path_buf(),        // package directory
+        PathBuf::from("./test-packages"), // test-packages directory
+        PathBuf::from("./packages"),      // packages directory
     ];
 
     // Use DependencyResolver
@@ -79,8 +79,10 @@ pub fn load_package_with_dependencies<P: AsRef<Path>>(path: P) -> Result<LoadedP
         .load_package_with_deps(path)
         .map_err(|e| ParserError::Validation(e.to_string()))?;
 
-
-    Ok(LoadedPackage { package, dependencies })
+    Ok(LoadedPackage {
+        package,
+        dependencies,
+    })
 }
 
 /// Load a package from a YAML or JSON file
@@ -174,9 +176,10 @@ fn validate_package(package: &Package) -> Result<()> {
 
     // Validate version format (basic semver check)
     if !is_valid_version(&package.version) {
-        return Err(ParserError::Validation(
-            format!("Invalid version format: {}", package.version),
-        ));
+        return Err(ParserError::Validation(format!(
+            "Invalid version format: {}",
+            package.version
+        )));
     }
 
     // TODO M6: Add comprehensive validation
@@ -231,4 +234,3 @@ namespaces:
         assert_eq!(package.version, "1.0.0");
     }
 }
-

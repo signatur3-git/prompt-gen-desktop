@@ -33,8 +33,14 @@ pub struct OAuthStartResponse {
 ///
 /// This is primarily meant for DEV because Windows deep links can spawn a second instance.
 #[tauri::command]
-pub fn oauth_start_loopback(app: AppHandle, state: State<OAuthCallbackState>) -> Result<OAuthStartResponse, String> {
-    let mut inner = state.inner.lock().map_err(|_| "oauth state poisoned".to_string())?;
+pub fn oauth_start_loopback(
+    app: AppHandle,
+    state: State<OAuthCallbackState>,
+) -> Result<OAuthStartResponse, String> {
+    let mut inner = state
+        .inner
+        .lock()
+        .map_err(|_| "oauth state poisoned".to_string())?;
     if inner.active {
         // already active, just return existing redirect
         if let Some(port) = inner.port {
@@ -47,8 +53,9 @@ pub fn oauth_start_loopback(app: AppHandle, state: State<OAuthCallbackState>) ->
 
     // Bind on fixed loopback port (must match allowlisted redirect_uri in the marketplace client).
     let port: u16 = 51234;
-    let server = Server::http(format!("localhost:{port}"))
-        .map_err(|e| format!("failed to bind loopback server on localhost:{port} (is it already in use?): {e}"))?;
+    let server = Server::http(format!("localhost:{port}")).map_err(|e| {
+        format!("failed to bind loopback server on localhost:{port} (is it already in use?): {e}")
+    })?;
 
     inner.active = true;
     inner.port = Some(port);
@@ -107,7 +114,10 @@ pub fn oauth_start_loopback(app: AppHandle, state: State<OAuthCallbackState>) ->
 /// Optional cleanup if the user cancels the flow.
 #[tauri::command]
 pub fn oauth_cancel_loopback(state: State<OAuthCallbackState>) -> Result<(), String> {
-    let mut inner = state.inner.lock().map_err(|_| "oauth state poisoned".to_string())?;
+    let mut inner = state
+        .inner
+        .lock()
+        .map_err(|_| "oauth state poisoned".to_string())?;
     inner.active = false;
     inner.port = None;
     inner.last_callback_url = None;

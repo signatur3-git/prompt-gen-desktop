@@ -28,10 +28,10 @@ pub enum TemplateToken {
     Reference {
         name: String,
         filter: Option<String>,
-        min: usize,              // M5: Default 1
-        max: usize,              // M5: Default 1
+        min: usize,                // M5: Default 1
+        max: usize,                // M5: Default 1
         separator: Option<String>, // M5: Optional separator set reference
-        unique: bool,            // M5: Default false
+        unique: bool,              // M5: Default false
     },
 }
 
@@ -136,7 +136,8 @@ impl Template {
 
                     // M5 Phase 3+4: Parse name and parameters
                     // Format: name?min=2,max=3&sep=comma_and&unique=true
-                    let (name, min, max, separator, unique) = Self::parse_reference_params(ref_text)?;
+                    let (name, min, max, separator, unique) =
+                        Self::parse_reference_params(ref_text)?;
 
                     tokens.push(TemplateToken::Reference {
                         name,
@@ -199,7 +200,9 @@ impl Template {
     /// M5 Phase 3+4: Parse reference parameters
     /// Format: name?min=2,max=3&sep=comma_and&unique=true
     /// Returns: (name, min, max, separator, unique)
-    fn parse_reference_params(ref_text: &str) -> Result<(String, usize, usize, Option<String>, bool)> {
+    fn parse_reference_params(
+        ref_text: &str,
+    ) -> Result<(String, usize, usize, Option<String>, bool)> {
         // Split on '?' to separate name from parameters
         let parts: Vec<&str> = ref_text.splitn(2, '?').collect();
         let name = parts[0].to_string();
@@ -226,25 +229,31 @@ impl Template {
 
                         match key {
                             "min" => {
-                                min = value.parse::<usize>()
-                                    .map_err(|_| ParseError::InvalidFormat(
-                                        format!("Invalid min value: {}", value)
-                                    ))?;
+                                min = value.parse::<usize>().map_err(|_| {
+                                    ParseError::InvalidFormat(format!(
+                                        "Invalid min value: {}",
+                                        value
+                                    ))
+                                })?;
                             }
                             "max" => {
-                                max = value.parse::<usize>()
-                                    .map_err(|_| ParseError::InvalidFormat(
-                                        format!("Invalid max value: {}", value)
-                                    ))?;
+                                max = value.parse::<usize>().map_err(|_| {
+                                    ParseError::InvalidFormat(format!(
+                                        "Invalid max value: {}",
+                                        value
+                                    ))
+                                })?;
                             }
                             "sep" => {
                                 separator = Some(value.to_string());
                             }
                             "unique" => {
-                                unique = value.parse::<bool>()
-                                    .map_err(|_| ParseError::InvalidFormat(
-                                        format!("Invalid unique value: {}", value)
-                                    ))?;
+                                unique = value.parse::<bool>().map_err(|_| {
+                                    ParseError::InvalidFormat(format!(
+                                        "Invalid unique value: {}",
+                                        value
+                                    ))
+                                })?;
                             }
                             _ => {
                                 // Unknown parameter - ignore for forward compatibility
@@ -262,9 +271,10 @@ impl Template {
 
             // Validate min <= max
             if min > max {
-                return Err(ParseError::InvalidFormat(
-                    format!("min ({}) must be <= max ({})", min, max)
-                ));
+                return Err(ParseError::InvalidFormat(format!(
+                    "min ({}) must be <= max ({})",
+                    min, max
+                )));
             }
         }
 
@@ -280,21 +290,27 @@ mod tests {
     fn test_parse_simple_text() {
         let template = Template::parse("Hello world").unwrap();
         assert_eq!(template.tokens.len(), 1);
-        assert_eq!(template.tokens[0], TemplateToken::Text("Hello world".to_string()));
+        assert_eq!(
+            template.tokens[0],
+            TemplateToken::Text("Hello world".to_string())
+        );
     }
 
     #[test]
     fn test_parse_simple_reference() {
         let template = Template::parse("{color}").unwrap();
         assert_eq!(template.tokens.len(), 1);
-        assert_eq!(template.tokens[0], TemplateToken::Reference {
-            name: "color".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        assert_eq!(
+            template.tokens[0],
+            TemplateToken::Reference {
+                name: "color".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            }
+        );
     }
 
     #[test]
@@ -302,51 +318,66 @@ mod tests {
         let template = Template::parse("A {color} {object}").unwrap();
         assert_eq!(template.tokens.len(), 4);
         assert_eq!(template.tokens[0], TemplateToken::Text("A ".to_string()));
-        assert_eq!(template.tokens[1], TemplateToken::Reference {
-            name: "color".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        assert_eq!(
+            template.tokens[1],
+            TemplateToken::Reference {
+                name: "color".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            }
+        );
         assert_eq!(template.tokens[2], TemplateToken::Text(" ".to_string()));
-        assert_eq!(template.tokens[3], TemplateToken::Reference {
-            name: "object".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        assert_eq!(
+            template.tokens[3],
+            TemplateToken::Reference {
+                name: "object".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            }
+        );
     }
 
     #[test]
     fn test_parse_with_namespace() {
         let template = Template::parse("{test:color}").unwrap();
         assert_eq!(template.tokens.len(), 1);
-        assert_eq!(template.tokens[0], TemplateToken::Reference {
-            name: "test:color".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        assert_eq!(
+            template.tokens[0],
+            TemplateToken::Reference {
+                name: "test:color".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            }
+        );
     }
 
     #[test]
     fn test_parse_escaped_braces() {
         let template = Template::parse("Use {{braces}} like this").unwrap();
         assert_eq!(template.tokens.len(), 1);
-        assert_eq!(template.tokens[0], TemplateToken::Text("Use {braces} like this".to_string()));
+        assert_eq!(
+            template.tokens[0],
+            TemplateToken::Text("Use {braces} like this".to_string())
+        );
     }
 
     #[test]
     fn test_parse_unclosed_reference() {
         let result = Template::parse("Hello {color");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), ParseError::UnclosedReference(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            ParseError::UnclosedReference(_)
+        ));
     }
 
     #[test]
@@ -360,14 +391,17 @@ mod tests {
     fn test_parse_whitespace_in_reference() {
         let template = Template::parse("{ color }").unwrap();
         // Should trim whitespace
-        assert_eq!(template.tokens[0], TemplateToken::Reference {
-            name: "color".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        assert_eq!(
+            template.tokens[0],
+            TemplateToken::Reference {
+                name: "color".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            }
+        );
     }
 
     #[test]
@@ -398,24 +432,32 @@ mod tests {
     fn test_parse_tag_filter() {
         let template = Template::parse("{animal#{tags.can_fly}}").unwrap();
         assert_eq!(template.tokens.len(), 1);
-        assert_eq!(template.tokens[0], TemplateToken::Reference {
-            name: "animal".to_string(),
-            filter: Some("tags.can_fly".to_string()),
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        assert_eq!(
+            template.tokens[0],
+            TemplateToken::Reference {
+                name: "animal".to_string(),
+                filter: Some("tags.can_fly".to_string()),
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            }
+        );
     }
 
     #[test]
     fn test_parse_tag_filter_complex() {
-        let template = Template::parse("{activity#{tags.requires_can_swim implies ref:animal.tags.can_swim}}").unwrap();
+        let template =
+            Template::parse("{activity#{tags.requires_can_swim implies ref:animal.tags.can_swim}}")
+                .unwrap();
         assert_eq!(template.tokens.len(), 1);
         if let TemplateToken::Reference { name, filter, .. } = &template.tokens[0] {
             assert_eq!(name, "activity");
             assert!(filter.is_some());
-            assert_eq!(filter.as_ref().unwrap(), "tags.requires_can_swim implies ref:animal.tags.can_swim");
+            assert_eq!(
+                filter.as_ref().unwrap(),
+                "tags.requires_can_swim implies ref:animal.tags.can_swim"
+            );
         } else {
             panic!("Expected Reference token");
         }
@@ -426,24 +468,33 @@ mod tests {
         let template = Template::parse("A {color} {animal#{tags.can_fly}} flies").unwrap();
         assert_eq!(template.tokens.len(), 5);
         assert_eq!(template.tokens[0], TemplateToken::Text("A ".to_string()));
-        assert_eq!(template.tokens[1], TemplateToken::Reference {
-            name: "color".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        assert_eq!(
+            template.tokens[1],
+            TemplateToken::Reference {
+                name: "color".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            }
+        );
         assert_eq!(template.tokens[2], TemplateToken::Text(" ".to_string()));
-        assert_eq!(template.tokens[3], TemplateToken::Reference {
-            name: "animal".to_string(),
-            filter: Some("tags.can_fly".to_string()),
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
-        assert_eq!(template.tokens[4], TemplateToken::Text(" flies".to_string()));
+        assert_eq!(
+            template.tokens[3],
+            TemplateToken::Reference {
+                name: "animal".to_string(),
+                filter: Some("tags.can_fly".to_string()),
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            }
+        );
+        assert_eq!(
+            template.tokens[4],
+            TemplateToken::Text(" flies".to_string())
+        );
     }
 
     #[test]
@@ -458,4 +509,3 @@ mod tests {
         }
     }
 }
-

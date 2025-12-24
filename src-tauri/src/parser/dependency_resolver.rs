@@ -1,8 +1,8 @@
-﻿// M9 Phase 2.2: Dependency Resolution
+// M9 Phase 2.2: Dependency Resolution
 //
 // Handles loading packages with their dependencies, with cycle detection and caching.
 
-use crate::core::{Dependency, Package, validate_exact_match};
+use crate::core::{validate_exact_match, Dependency, Package};
 use crate::parser::package_loader;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -36,8 +36,8 @@ impl DependencyResolver {
         path: &Path,
     ) -> Result<(Package, HashMap<String, Package>), DependencyError> {
         // Load main package
-        let package = package_loader::load_package(path)
-            .map_err(|e| DependencyError::LoadError {
+        let package =
+            package_loader::load_package(path).map_err(|e| DependencyError::LoadError {
                 package: path.display().to_string(),
                 path: path.to_path_buf(),
                 reason: e.to_string(),
@@ -72,14 +72,15 @@ impl DependencyResolver {
             let dep_package = self.load_dependency(dep, base_path)?;
 
             // Validate version match (exact only!)
-            validate_exact_match(&dep_package.version, &dep.version)
-                .map_err(|e| DependencyError::VersionMismatch(Box::new(VersionMismatchData {
+            validate_exact_match(&dep_package.version, &dep.version).map_err(|e| {
+                DependencyError::VersionMismatch(Box::new(VersionMismatchData {
                     package: dep.package.clone(),
                     required: dep.version.clone(),
                     found: dep_package.version.clone(),
                     path: self.resolve_path(dep, base_path),
                     details: e.to_string(),
-                })))?;
+                }))
+            })?;
 
             // Store in resolved map
             resolved.insert(dep.package.clone(), dep_package);
@@ -106,8 +107,8 @@ impl DependencyResolver {
         let dep_path = self.find_package_path(dep, base_path)?;
 
         // Load package
-        let package = package_loader::load_package(&dep_path)
-            .map_err(|e| DependencyError::LoadError {
+        let package =
+            package_loader::load_package(&dep_path).map_err(|e| DependencyError::LoadError {
                 package: dep.package.clone(),
                 path: dep_path.clone(),
                 reason: e.to_string(),
@@ -246,9 +247,7 @@ pub enum DependencyError {
     },
 
     /// Circular dependency detected
-    CircularDependency {
-        cycle: String,
-    },
+    CircularDependency { cycle: String },
 }
 
 /// Data for version mismatch errors (boxed to reduce size)
@@ -264,16 +263,26 @@ pub struct VersionMismatchData {
 impl std::fmt::Display for DependencyError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DependencyError::NotFound { package, searched_paths } => {
+            DependencyError::NotFound {
+                package,
+                searched_paths,
+            } => {
                 writeln!(f, "Dependency not found: {}", package)?;
                 writeln!(f, "\nSearched paths:")?;
                 for path in searched_paths {
                     writeln!(f, "  - {}", path)?;
                 }
-                writeln!(f, "\nSuggestion: Check the 'path' field or install the package")
+                writeln!(
+                    f,
+                    "\nSuggestion: Check the 'path' field or install the package"
+                )
             }
 
-            DependencyError::LoadError { package, path, reason } => {
+            DependencyError::LoadError {
+                package,
+                path,
+                reason,
+            } => {
                 writeln!(f, "Failed to load dependency: {}", package)?;
                 writeln!(f, "  Path: {}", path.display())?;
                 writeln!(f, "  Error: {}", reason)
@@ -287,11 +296,18 @@ impl std::fmt::Display for DependencyError {
                     writeln!(f, "  Location: {}", p.display())?;
                 }
                 writeln!(f, "\n{}", data.details)?;
-                writeln!(f, "\nSuggestion: Update {} to version {} or change dependency to version: \"{}\"",
-                    data.package, data.required, data.found)
+                writeln!(
+                    f,
+                    "\nSuggestion: Update {} to version {} or change dependency to version: \"{}\"",
+                    data.package, data.required, data.found
+                )
             }
 
-            DependencyError::PackageIdMismatch { expected, found, path } => {
+            DependencyError::PackageIdMismatch {
+                expected,
+                found,
+                path,
+            } => {
                 writeln!(f, "Package ID mismatch")?;
                 writeln!(f, "  Expected: {}", expected)?;
                 writeln!(f, "  Found: {}", found)?;
@@ -302,7 +318,10 @@ impl std::fmt::Display for DependencyError {
             DependencyError::CircularDependency { cycle } => {
                 writeln!(f, "Circular dependency detected")?;
                 writeln!(f, "  Cycle: {}", cycle)?;
-                writeln!(f, "\nSuggestion: Remove one of the dependencies to break the cycle")
+                writeln!(
+                    f,
+                    "\nSuggestion: Remove one of the dependencies to break the cycle"
+                )
             }
         }
     }
@@ -353,5 +372,3 @@ mod tests {
         assert!(paths.iter().any(|p| p.contains("local.yaml")));
     }
 }
-
-

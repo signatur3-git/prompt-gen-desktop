@@ -1,4 +1,4 @@
-﻿// M2: Foundation - Core Data Models
+// M2: Foundation - Core Data Models
 // Based on M1 decisions (DEC-0001, DEC-0002, DEC-0003)
 
 use serde::{Deserialize, Serialize};
@@ -36,7 +36,7 @@ pub struct PackageMetadata {
 }
 
 /// Dependency - Package dependency with exact version matching
-/// 
+///
 /// We enforce exact version matching (not semver ranges) to guarantee deterministic rendering.
 /// See DESIGN_DECISION_EXACT_VERSION_MATCHING.md for rationale.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,7 +81,7 @@ pub struct Namespace {
     /// Decisions for complex logic (M1 Pattern 3)
     #[serde(default)]
     pub decisions: Vec<Decision>,
-    
+
     /// Rulebooks - Entry point wrappers for rendering (M9)
     #[serde(default)]
     pub rulebooks: HashMap<String, crate::core::rulebook::Rulebook>,
@@ -171,8 +171,8 @@ fn default_max() -> usize {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SeparatorSet {
     pub name: String,
-    pub primary: String,    // ", "
-    pub secondary: String,  // " and "
+    pub primary: String,   // ", "
+    pub secondary: String, // " and "
     pub tertiary: Option<String>,
 }
 
@@ -194,7 +194,6 @@ pub struct Rule {
     pub value: String,
 }
 
-
 /// Decision - Complex reusable logic (M1 Pattern 3)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Decision {
@@ -202,7 +201,7 @@ pub struct Decision {
     pub name: String,
 
     /// Input parameters
-    pub inputs: HashMap<String, String>,  // name -> type
+    pub inputs: HashMap<String, String>, // name -> type
 
     /// Output parameters
     pub outputs: HashMap<String, String>, // name -> type
@@ -224,10 +223,7 @@ pub enum Processor {
 
     /// Script-based (for complex logic)
     #[serde(rename = "script")]
-    Script {
-        language: String,
-        code: String,
-    },
+    Script { language: String, code: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -264,4 +260,3 @@ mod tests {
         assert_eq!(reference.max, 1);
     }
 }
-

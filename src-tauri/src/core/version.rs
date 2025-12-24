@@ -21,26 +21,39 @@ impl Version {
         if parts.len() != 3 {
             return Err(VersionError::InvalidFormat {
                 input: s.to_string(),
-                reason: format!("Expected 3 parts (major.minor.patch), found {}", parts.len()),
+                reason: format!(
+                    "Expected 3 parts (major.minor.patch), found {}",
+                    parts.len()
+                ),
             });
         }
 
-        let major = parts[0].parse::<u32>().map_err(|_| VersionError::InvalidFormat {
-            input: s.to_string(),
-            reason: format!("Invalid major version: '{}'", parts[0]),
-        })?;
+        let major = parts[0]
+            .parse::<u32>()
+            .map_err(|_| VersionError::InvalidFormat {
+                input: s.to_string(),
+                reason: format!("Invalid major version: '{}'", parts[0]),
+            })?;
 
-        let minor = parts[1].parse::<u32>().map_err(|_| VersionError::InvalidFormat {
-            input: s.to_string(),
-            reason: format!("Invalid minor version: '{}'", parts[1]),
-        })?;
+        let minor = parts[1]
+            .parse::<u32>()
+            .map_err(|_| VersionError::InvalidFormat {
+                input: s.to_string(),
+                reason: format!("Invalid minor version: '{}'", parts[1]),
+            })?;
 
-        let patch = parts[2].parse::<u32>().map_err(|_| VersionError::InvalidFormat {
-            input: s.to_string(),
-            reason: format!("Invalid patch version: '{}'", parts[2]),
-        })?;
+        let patch = parts[2]
+            .parse::<u32>()
+            .map_err(|_| VersionError::InvalidFormat {
+                input: s.to_string(),
+                reason: format!("Invalid patch version: '{}'", parts[2]),
+            })?;
 
-        Ok(Version { major, minor, patch })
+        Ok(Version {
+            major,
+            minor,
+            patch,
+        })
     }
 
     /// Check if this version exactly matches another
@@ -82,7 +95,9 @@ pub fn validate_exact_match(found: &str, required: &str) -> Result<(), VersionEr
         }
     } else if required.starts_with('~') {
         // Tilde: Patch updates only (same major.minor)
-        if found_version.major != required_version.major || found_version.minor != required_version.minor {
+        if found_version.major != required_version.major
+            || found_version.minor != required_version.minor
+        {
             return Err(VersionError::Mismatch {
                 required: required.to_string(),
                 found: found.to_string(),
@@ -124,16 +139,10 @@ fn version_gte(a: &Version, b: &Version) -> bool {
 #[derive(Debug, Clone)]
 pub enum VersionError {
     /// Invalid version format
-    InvalidFormat {
-        input: String,
-        reason: String,
-    },
+    InvalidFormat { input: String, reason: String },
 
     /// Version mismatch (exact match required)
-    Mismatch {
-        required: String,
-        found: String,
-    },
+    Mismatch { required: String, found: String },
 }
 
 impl fmt::Display for VersionError {
@@ -237,4 +246,3 @@ mod tests {
         assert!(msg.contains("deterministic rendering"));
     }
 }
-

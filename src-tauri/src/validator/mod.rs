@@ -1,4 +1,4 @@
-﻿// M6 Phase 1: Package Validator
+// M6 Phase 1: Package Validator
 // Comprehensive validation with helpful error messages
 
 use crate::core::models::Package;
@@ -291,7 +291,6 @@ impl PackageValidator {
         Self::validate_rulebooks(package, result);
     }
 
-
     /// Best practices validation - warnings for improvement
     fn validate_best_practices(package: &Package, result: &mut ValidationResult) {
         // Check for unused components
@@ -328,8 +327,9 @@ impl PackageValidator {
                     // This is usually a mistake: reference "colors" with target "colors"
                     if !reference.target.contains(':') && reference.target == *ref_name {
                         // Check if there's actually a datatype/promptsection with this name
-                        let has_matching_component = namespace.datatypes.contains_key(&reference.target)
-                            || namespace.prompt_sections.contains_key(&reference.target);
+                        let has_matching_component =
+                            namespace.datatypes.contains_key(&reference.target)
+                                || namespace.prompt_sections.contains_key(&reference.target);
 
                         if !has_matching_component {
                             result.add_error(ValidationError::ReferenceNotFound {
@@ -354,12 +354,13 @@ impl PackageValidator {
                     };
 
                     // Check if it exists in the main package
-                    let found_in_package = if let Some(target_namespace) = package.namespaces.get(&target_ns) {
-                        target_namespace.datatypes.contains_key(&target_name)
-                            || target_namespace.prompt_sections.contains_key(&target_name)
-                    } else {
-                        false
-                    };
+                    let found_in_package =
+                        if let Some(target_namespace) = package.namespaces.get(&target_ns) {
+                            target_namespace.datatypes.contains_key(&target_name)
+                                || target_namespace.prompt_sections.contains_key(&target_name)
+                        } else {
+                            false
+                        };
 
                     // M9: If not found in main package, check dependencies
                     let found = if found_in_package {
@@ -370,7 +371,12 @@ impl PackageValidator {
 
                     if !found {
                         // Try to suggest alternatives
-                        let suggestion = Self::find_similar_name_with_deps(package, dependencies, &target_ns, &target_name);
+                        let suggestion = Self::find_similar_name_with_deps(
+                            package,
+                            dependencies,
+                            &target_ns,
+                            &target_name,
+                        );
 
                         result.add_error(ValidationError::ReferenceNotFound {
                             reference: reference.target.clone(),
@@ -382,7 +388,6 @@ impl PackageValidator {
             }
         }
     }
-
 
     /// M9 Phase 2.7: Check if a component exists in any dependency
     fn find_in_dependencies(
@@ -417,7 +422,10 @@ impl PackageValidator {
         // Then try in dependencies
         for dep_package in dependencies.values() {
             if let Some(suggestion) = Self::find_similar_name(dep_package, target_ns, target_name) {
-                return Some(format!("{} (from dependency {})", suggestion, dep_package.id));
+                return Some(format!(
+                    "{} (from dependency {})",
+                    suggestion, dep_package.id
+                ));
             }
         }
 
@@ -528,7 +536,11 @@ impl PackageValidator {
     }
 
     // M9: Find similar promptsection names for rulebook validation
-    fn find_similar_promptsection(package: &Package, namespace: &str, target: &str) -> Option<String> {
+    fn find_similar_promptsection(
+        package: &Package,
+        namespace: &str,
+        target: &str,
+    ) -> Option<String> {
         if let Some(ns) = package.namespaces.get(namespace) {
             for ps_name in ns.prompt_sections.keys() {
                 if Self::is_similar(ps_name, target) {
@@ -745,7 +757,10 @@ impl PackageValidator {
                         if parts.len() != 2 {
                             result.add_error(ValidationError::ReferenceNotFound {
                                 reference: entry_point.prompt_section.clone(),
-                                defined_in: format!("{}:{} entry_point[{}]", ns_id, rulebook_name, idx),
+                                defined_in: format!(
+                                    "{}:{} entry_point[{}]",
+                                    ns_id, rulebook_name, idx
+                                ),
                                 suggestion: Some("Format should be 'namespace:name'".to_string()),
                             });
                             continue;
@@ -767,7 +782,11 @@ impl PackageValidator {
                         result.add_error(ValidationError::ReferenceNotFound {
                             reference: entry_point.prompt_section.clone(),
                             defined_in: format!("{}:{} entry_point[{}]", ns_id, rulebook_name, idx),
-                            suggestion: Self::find_similar_promptsection(package, &target_ns, &target_name),
+                            suggestion: Self::find_similar_promptsection(
+                                package,
+                                &target_ns,
+                                &target_name,
+                            ),
                         });
                     }
                 }
@@ -786,7 +805,8 @@ impl PackageValidator {
                         if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
                             result.add_error(ValidationError::InvalidNaming {
                                 name: format!("{}:{} context key '{}'", ns_id, rulebook_name, key),
-                                reason: "Context keys with ':' must be in format 'scope:key'".to_string(),
+                                reason: "Context keys with ':' must be in format 'scope:key'"
+                                    .to_string(),
                             });
                         }
                     }
@@ -821,7 +841,8 @@ impl PackageValidator {
                 result.add_error(ValidationError::InvalidDependencyVersion {
                     package: dep.package.clone(),
                     version: dep.version.clone(),
-                    reason: "Invalid semver format. Examples: 1.0.0, ^1.0.0, ~1.2.0, >=1.0.0".to_string(),
+                    reason: "Invalid semver format. Examples: 1.0.0, ^1.0.0, ~1.2.0, >=1.0.0"
+                        .to_string(),
                 });
                 continue;
             }
@@ -874,7 +895,8 @@ impl PackageValidator {
     fn is_valid_semver(version: &str) -> bool {
         // Pattern: optional prefix (^, ~, >=, etc.) + three numbers separated by dots
         // Simpler regex without the regex crate
-        let parts: Vec<&str> = version.trim_start_matches(['^', '~', '>', '<', '='])
+        let parts: Vec<&str> = version
+            .trim_start_matches(['^', '~', '>', '<', '='])
             .split('.')
             .collect();
 
@@ -894,8 +916,10 @@ impl PackageValidator {
 
     /// Check if version is flexible (not exact)
     fn is_flexible_version(version: &str) -> bool {
-        version.contains('^') || version.contains('~') ||
-        version.contains('>') || version.contains('<')
+        version.contains('^')
+            || version.contains('~')
+            || version.contains('>')
+            || version.contains('<')
     }
 
     // Check for unused components
@@ -929,11 +953,13 @@ impl PackageValidator {
                     // Mark as used in the target namespace (cross-namespace usage counts!)
                     if let Some(target_namespace) = package.namespaces.get(&target_ns) {
                         if target_namespace.datatypes.contains_key(&target_name) {
-                            used_datatypes.entry(target_ns.clone())
+                            used_datatypes
+                                .entry(target_ns.clone())
                                 .or_default()
                                 .insert(target_name);
                         } else if target_namespace.prompt_sections.contains_key(&target_name) {
-                            used_promptsections.entry(target_ns.clone())
+                            used_promptsections
+                                .entry(target_ns.clone())
                                 .or_default()
                                 .insert(target_name);
                         }
@@ -941,7 +967,8 @@ impl PackageValidator {
 
                     // Check separator usage (separators are same-namespace only)
                     if let Some(sep) = &reference.separator {
-                        used_separators.entry(_source_ns_id.clone())
+                        used_separators
+                            .entry(_source_ns_id.clone())
                             .or_default()
                             .insert(sep.clone());
                     }
@@ -952,7 +979,8 @@ impl PackageValidator {
         // Second pass: Warn about unused components in each namespace
         for (ns_id, namespace) in &package.namespaces {
             let ns_used_datatypes = used_datatypes.get(ns_id).cloned().unwrap_or_default();
-            let ns_used_promptsections = used_promptsections.get(ns_id).cloned().unwrap_or_default();
+            let ns_used_promptsections =
+                used_promptsections.get(ns_id).cloned().unwrap_or_default();
             let ns_used_separators = used_separators.get(ns_id).cloned().unwrap_or_default();
 
             // Warn about unused datatypes
@@ -1099,7 +1127,9 @@ mod tests {
             secondary: " and ".to_string(),
             tertiary: None,
         };
-        namespace.separator_sets.insert("comma_and".to_string(), separator);
+        namespace
+            .separator_sets
+            .insert("comma_and".to_string(), separator);
 
         namespaces.insert("test".to_string(), namespace);
 
@@ -1171,8 +1201,12 @@ mod tests {
             },
         );
 
-        package.namespaces.get_mut("test").unwrap()
-            .prompt_sections.insert("test_prompt".to_string(), ps);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .prompt_sections
+            .insert("test_prompt".to_string(), ps);
 
         let result = PackageValidator::validate(&package);
         assert!(result.is_valid(), "Package should be valid");
@@ -1201,13 +1235,20 @@ mod tests {
             },
         );
 
-        package.namespaces.get_mut("test").unwrap()
-            .prompt_sections.insert("test_prompt".to_string(), ps);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .prompt_sections
+            .insert("test_prompt".to_string(), ps);
 
         let result = PackageValidator::validate(&package);
         assert!(!result.is_valid(), "Should find reference error");
         assert_eq!(result.errors.len(), 1);
-        assert!(matches!(result.errors[0], ValidationError::ReferenceNotFound { .. }));
+        assert!(matches!(
+            result.errors[0],
+            ValidationError::ReferenceNotFound { .. }
+        ));
     }
 
     #[test]
@@ -1233,12 +1274,19 @@ mod tests {
             },
         );
 
-        package.namespaces.get_mut("test").unwrap()
-            .prompt_sections.insert("test_prompt".to_string(), ps);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .prompt_sections
+            .insert("test_prompt".to_string(), ps);
 
         let result = PackageValidator::validate(&package);
         assert!(!result.is_valid());
-        assert!(result.errors.iter().any(|e| matches!(e, ValidationError::MinMaxInvalid { .. })));
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::MinMaxInvalid { .. })));
     }
 
     #[test]
@@ -1264,12 +1312,19 @@ mod tests {
             },
         );
 
-        package.namespaces.get_mut("test").unwrap()
-            .prompt_sections.insert("test_prompt".to_string(), ps);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .prompt_sections
+            .insert("test_prompt".to_string(), ps);
 
         let result = PackageValidator::validate(&package);
         assert!(!result.is_valid());
-        assert!(result.errors.iter().any(|e| matches!(e, ValidationError::SeparatorNotFound { .. })));
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::SeparatorNotFound { .. })));
     }
 
     #[test]
@@ -1295,12 +1350,19 @@ mod tests {
             },
         );
 
-        package.namespaces.get_mut("test").unwrap()
-            .prompt_sections.insert("test_prompt".to_string(), ps);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .prompt_sections
+            .insert("test_prompt".to_string(), ps);
 
         let result = PackageValidator::validate(&package);
         assert!(!result.is_valid());
-        assert!(result.errors.iter().any(|e| matches!(e, ValidationError::UniqueConstraintInfeasible { .. })));
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::UniqueConstraintInfeasible { .. })));
     }
 
     #[test]
@@ -1310,7 +1372,10 @@ mod tests {
         let result = PackageValidator::validate(&package);
         assert!(result.is_valid()); // Valid but has warnings
         assert!(result.has_warnings());
-        assert!(result.warnings.iter().any(|w| matches!(w, ValidationWarning::UnusedDatatype { .. })));
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| matches!(w, ValidationWarning::UnusedDatatype { .. })));
     }
 
     #[test]
@@ -1324,12 +1389,19 @@ mod tests {
             extends: None,
             override_tags: HashMap::new(),
         };
-        package.namespaces.get_mut("test").unwrap()
-            .datatypes.insert("InvalidName".to_string(), datatype);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .datatypes
+            .insert("InvalidName".to_string(), datatype);
 
         let result = PackageValidator::validate(&package);
         assert!(!result.is_valid());
-        assert!(result.errors.iter().any(|e| matches!(e, ValidationError::InvalidNaming { .. })));
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::InvalidNaming { .. })));
     }
 
     #[test]
@@ -1350,44 +1422,56 @@ mod tests {
 
     #[test]
     fn test_rulebook_valid() {
-        use crate::core::rulebook::{Rulebook, EntryPoint};
+        use crate::core::rulebook::{EntryPoint, Rulebook};
 
         let mut package = create_test_package();
 
         // Add a promptsection
         let mut refs = HashMap::new();
-        refs.insert("color".to_string(), Reference {
-            target: "test:colors".to_string(),
-            filter: None,
-            min: 1,
-            max: 1,
-            separator: None,
-            unique: false,
-        });
+        refs.insert(
+            "color".to_string(),
+            Reference {
+                target: "test:colors".to_string(),
+                filter: None,
+                min: 1,
+                max: 1,
+                separator: None,
+                unique: false,
+            },
+        );
 
-        package.namespaces.get_mut("test").unwrap()
-            .prompt_sections.insert("simple".to_string(), PromptSection {
-                name: "simple".to_string(),
-                template: "{color} item".to_string(),
-                references: refs,
-            });
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .prompt_sections
+            .insert(
+                "simple".to_string(),
+                PromptSection {
+                    name: "simple".to_string(),
+                    template: "{color} item".to_string(),
+                    references: refs,
+                },
+            );
 
         // Add a valid rulebook
         let rulebook = Rulebook {
             name: "test_rulebook".to_string(),
             description: "Test".to_string(),
-            entry_points: vec![
-                EntryPoint {
-                    prompt_section: "test:simple".to_string(),
-                    weight: 1.0,
-                },
-            ],
+            entry_points: vec![EntryPoint {
+                prompt_section: "test:simple".to_string(),
+                weight: 1.0,
+            }],
             batch_variety: false,
             context_defaults: HashMap::new(),
         };
 
-        package.namespaces.get_mut("test").unwrap()
-            .rulebooks.insert("test_rulebook".to_string(), rulebook);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .rulebooks
+            .insert("test_rulebook".to_string(), rulebook);
 
         let result = PackageValidator::validate(&package);
         assert!(result.is_valid());
@@ -1395,7 +1479,7 @@ mod tests {
 
     #[test]
     fn test_rulebook_invalid_entry_point_reference() {
-        use crate::core::rulebook::{Rulebook, EntryPoint};
+        use crate::core::rulebook::{EntryPoint, Rulebook};
 
         let mut package = create_test_package();
 
@@ -1403,18 +1487,20 @@ mod tests {
         let rulebook = Rulebook {
             name: "test_rulebook".to_string(),
             description: "Test".to_string(),
-            entry_points: vec![
-                EntryPoint {
-                    prompt_section: "test:nonexistent".to_string(),
-                    weight: 1.0,
-                },
-            ],
+            entry_points: vec![EntryPoint {
+                prompt_section: "test:nonexistent".to_string(),
+                weight: 1.0,
+            }],
             batch_variety: false,
             context_defaults: HashMap::new(),
         };
 
-        package.namespaces.get_mut("test").unwrap()
-            .rulebooks.insert("test_rulebook".to_string(), rulebook);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .rulebooks
+            .insert("test_rulebook".to_string(), rulebook);
 
         let result = PackageValidator::validate(&package);
         assert!(!result.is_valid());
@@ -1427,17 +1513,24 @@ mod tests {
 
     #[test]
     fn test_rulebook_invalid_context_key() {
-        use crate::core::rulebook::{Rulebook, EntryPoint};
+        use crate::core::rulebook::{EntryPoint, Rulebook};
 
         let mut package = create_test_package();
 
         // Add a promptsection
-        package.namespaces.get_mut("test").unwrap()
-            .prompt_sections.insert("simple".to_string(), PromptSection {
-                name: "simple".to_string(),
-                template: "test".to_string(),
-                references: HashMap::new(),
-            });
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .prompt_sections
+            .insert(
+                "simple".to_string(),
+                PromptSection {
+                    name: "simple".to_string(),
+                    template: "test".to_string(),
+                    references: HashMap::new(),
+                },
+            );
 
         // Add rulebook with invalid context key format
         let mut context_defaults = HashMap::new();
@@ -1446,18 +1539,20 @@ mod tests {
         let rulebook = Rulebook {
             name: "test_rulebook".to_string(),
             description: "Test".to_string(),
-            entry_points: vec![
-                EntryPoint {
-                    prompt_section: "test:simple".to_string(),
-                    weight: 1.0,
-                },
-            ],
+            entry_points: vec![EntryPoint {
+                prompt_section: "test:simple".to_string(),
+                weight: 1.0,
+            }],
             batch_variety: false,
             context_defaults,
         };
 
-        package.namespaces.get_mut("test").unwrap()
-            .rulebooks.insert("test_rulebook".to_string(), rulebook);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .rulebooks
+            .insert("test_rulebook".to_string(), rulebook);
 
         let result = PackageValidator::validate(&package);
         assert!(!result.is_valid());
@@ -1470,17 +1565,24 @@ mod tests {
 
     #[test]
     fn test_rulebook_empty_context_key() {
-        use crate::core::rulebook::{Rulebook, EntryPoint};
+        use crate::core::rulebook::{EntryPoint, Rulebook};
 
         let mut package = create_test_package();
 
         // Add a promptsection
-        package.namespaces.get_mut("test").unwrap()
-            .prompt_sections.insert("simple".to_string(), PromptSection {
-                name: "simple".to_string(),
-                template: "test".to_string(),
-                references: HashMap::new(),
-            });
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .prompt_sections
+            .insert(
+                "simple".to_string(),
+                PromptSection {
+                    name: "simple".to_string(),
+                    template: "test".to_string(),
+                    references: HashMap::new(),
+                },
+            );
 
         // Add rulebook with empty context key
         let mut context_defaults = HashMap::new();
@@ -1489,18 +1591,20 @@ mod tests {
         let rulebook = Rulebook {
             name: "test_rulebook".to_string(),
             description: "Test".to_string(),
-            entry_points: vec![
-                EntryPoint {
-                    prompt_section: "test:simple".to_string(),
-                    weight: 1.0,
-                },
-            ],
+            entry_points: vec![EntryPoint {
+                prompt_section: "test:simple".to_string(),
+                weight: 1.0,
+            }],
             batch_variety: false,
             context_defaults,
         };
 
-        package.namespaces.get_mut("test").unwrap()
-            .rulebooks.insert("test_rulebook".to_string(), rulebook);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .rulebooks
+            .insert("test_rulebook".to_string(), rulebook);
 
         let result = PackageValidator::validate(&package);
         assert!(!result.is_valid());
@@ -1513,7 +1617,7 @@ mod tests {
 
     #[test]
     fn test_rulebook_cross_namespace_reference() {
-        use crate::core::rulebook::{Rulebook, EntryPoint};
+        use crate::core::rulebook::{EntryPoint, Rulebook};
 
         let mut package = create_test_package();
 
@@ -1529,11 +1633,14 @@ mod tests {
         };
 
         // Add a promptsection in other namespace
-        namespace2.prompt_sections.insert("scene".to_string(), PromptSection {
-            name: "scene".to_string(),
-            template: "test scene".to_string(),
-            references: HashMap::new(),
-        });
+        namespace2.prompt_sections.insert(
+            "scene".to_string(),
+            PromptSection {
+                name: "scene".to_string(),
+                template: "test scene".to_string(),
+                references: HashMap::new(),
+            },
+        );
 
         package.namespaces.insert("other".to_string(), namespace2);
 
@@ -1541,18 +1648,20 @@ mod tests {
         let rulebook = Rulebook {
             name: "cross_ns".to_string(),
             description: "Cross-namespace test".to_string(),
-            entry_points: vec![
-                EntryPoint {
-                    prompt_section: "other:scene".to_string(),
-                    weight: 1.0,
-                },
-            ],
+            entry_points: vec![EntryPoint {
+                prompt_section: "other:scene".to_string(),
+                weight: 1.0,
+            }],
             batch_variety: false,
             context_defaults: HashMap::new(),
         };
 
-        package.namespaces.get_mut("test").unwrap()
-            .rulebooks.insert("cross_ns".to_string(), rulebook);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .rulebooks
+            .insert("cross_ns".to_string(), rulebook);
 
         let result = PackageValidator::validate(&package);
         assert!(result.is_valid()); // Cross-namespace references should be valid
@@ -1560,7 +1669,7 @@ mod tests {
 
     #[test]
     fn test_rulebook_invalid_entry_point_format() {
-        use crate::core::rulebook::{Rulebook, EntryPoint};
+        use crate::core::rulebook::{EntryPoint, Rulebook};
 
         let mut package = create_test_package();
 
@@ -1568,18 +1677,20 @@ mod tests {
         let rulebook = Rulebook {
             name: "test_rulebook".to_string(),
             description: "Test".to_string(),
-            entry_points: vec![
-                EntryPoint {
-                    prompt_section: "test:invalid:format".to_string(),
-                    weight: 1.0,
-                },
-            ],
+            entry_points: vec![EntryPoint {
+                prompt_section: "test:invalid:format".to_string(),
+                weight: 1.0,
+            }],
             batch_variety: false,
             context_defaults: HashMap::new(),
         };
 
-        package.namespaces.get_mut("test").unwrap()
-            .rulebooks.insert("test_rulebook".to_string(), rulebook);
+        package
+            .namespaces
+            .get_mut("test")
+            .unwrap()
+            .rulebooks
+            .insert("test_rulebook".to_string(), rulebook);
 
         let result = PackageValidator::validate(&package);
         assert!(!result.is_valid());
@@ -1590,5 +1701,3 @@ mod tests {
         )));
     }
 }
-
-

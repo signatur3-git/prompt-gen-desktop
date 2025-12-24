@@ -1,31 +1,27 @@
 // M2: Tauri Commands - Package operations
 // Bridge between Vue frontend and Rust backend
 
-use crate::parser::{self, DependencyResolver};
 use crate::core::Package;
+use crate::parser::{self, DependencyResolver};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::collections::HashMap;
 
 /// Load a package from a file path
 #[tauri::command]
 pub async fn load_package(path: String) -> Result<Package, String> {
-    parser::load_package(&path)
-        .map_err(|e| format!("Failed to load package: {}", e))
+    parser::load_package(&path).map_err(|e| format!("Failed to load package: {}", e))
 }
 
 /// M9 Phase 2.5: Load a package with all its dependencies resolved
 #[tauri::command]
 pub async fn load_package_with_dependencies(
     path: String,
-    search_paths: Option<Vec<String>>
+    search_paths: Option<Vec<String>>,
 ) -> Result<PackageWithDependencies, String> {
     // Convert search paths to PathBuf
     let search_paths = search_paths
-        .unwrap_or_else(|| vec![
-            "./packages".to_string(),
-            "./test-packages".to_string(),
-        ])
+        .unwrap_or_else(|| vec!["./packages".to_string(), "./test-packages".to_string()])
         .into_iter()
         .map(PathBuf::from)
         .collect();
@@ -58,8 +54,7 @@ pub async fn save_package(package: Package, path: String) -> Result<(), String> 
         .map_err(|e| format!("Failed to serialize package: {}", e))?;
 
     // Write to file
-    fs::write(&path, yaml)
-        .map_err(|e| format!("Failed to write file: {}", e))?;
+    fs::write(&path, yaml).map_err(|e| format!("Failed to write file: {}", e))?;
 
     Ok(())
 }
@@ -72,21 +67,24 @@ pub async fn create_package(
     name: String,
     description: Option<String>,
     authors: Vec<String>,
-    namespace_id: String
+    namespace_id: String,
 ) -> Result<Package, String> {
-    use crate::core::{PackageMetadata, Namespace};
+    use crate::core::{Namespace, PackageMetadata};
     use std::collections::HashMap;
 
     let mut namespaces = HashMap::new();
-    namespaces.insert(namespace_id.clone(), Namespace {
-        id: namespace_id,
-        datatypes: HashMap::new(),
-        prompt_sections: HashMap::new(),
-        separator_sets: HashMap::new(),
-        rules: HashMap::new(),
-        decisions: Vec::new(), // M7: Initialize empty decisions
-        rulebooks: HashMap::new(), // M9: Initialize empty rulebooks
-    });
+    namespaces.insert(
+        namespace_id.clone(),
+        Namespace {
+            id: namespace_id,
+            datatypes: HashMap::new(),
+            prompt_sections: HashMap::new(),
+            separator_sets: HashMap::new(),
+            rules: HashMap::new(),
+            decisions: Vec::new(),     // M7: Initialize empty decisions
+            rulebooks: HashMap::new(), // M9: Initialize empty rulebooks
+        },
+    );
 
     Ok(Package {
         id,
@@ -102,7 +100,6 @@ pub async fn create_package(
     })
 }
 
-
 /// Get package information (for display)
 #[tauri::command]
 pub async fn get_package_info(package: Package) -> Result<PackageInfo, String> {
@@ -112,10 +109,14 @@ pub async fn get_package_info(package: Package) -> Result<PackageInfo, String> {
         name: package.metadata.name.clone(),
         description: package.metadata.description.clone(),
         namespace_count: package.namespaces.len(),
-        datatype_count: package.namespaces.values()
+        datatype_count: package
+            .namespaces
+            .values()
             .map(|ns| ns.datatypes.len())
             .sum(),
-        promptsection_count: package.namespaces.values()
+        promptsection_count: package
+            .namespaces
+            .values()
             .map(|ns| ns.prompt_sections.len())
             .sum(),
     })
@@ -131,4 +132,3 @@ pub struct PackageInfo {
     pub datatype_count: usize,
     pub promptsection_count: usize,
 }
-

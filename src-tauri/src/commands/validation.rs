@@ -1,4 +1,4 @@
-﻿// M7 Phase 3: Validation Commands
+// M7 Phase 3: Validation Commands
 
 use crate::core::models::Package;
 use crate::validator::{PackageValidator, ValidationError};
@@ -109,7 +109,7 @@ impl From<ValidationError> for ErrorInfo {
 #[command]
 pub async fn validate_package(package: Package) -> Result<ValidationResult, String> {
     let result = PackageValidator::validate(&package);
-    
+
     if result.is_valid() {
         Ok(ValidationResult {
             is_valid: true,
@@ -151,5 +151,3 @@ pub async fn validate_package_with_dependencies(
         })
     }
 }
-
-

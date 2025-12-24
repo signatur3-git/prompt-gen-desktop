@@ -3,5 +3,4 @@
 
 pub mod processor;
 
-pub use processor::{RulesProcessor, RuleError};
-
+pub use processor::{RuleError, RulesProcessor};

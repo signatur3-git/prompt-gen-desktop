@@ -154,10 +154,22 @@ mod tests {
 
     #[test]
     fn test_text_to_boolean() {
-        assert_eq!(ContextValue::Text("true".to_string()).as_boolean(), Some(true));
-        assert_eq!(ContextValue::Text("false".to_string()).as_boolean(), Some(false));
-        assert_eq!(ContextValue::Text("yes".to_string()).as_boolean(), Some(true));
-        assert_eq!(ContextValue::Text("no".to_string()).as_boolean(), Some(false));
+        assert_eq!(
+            ContextValue::Text("true".to_string()).as_boolean(),
+            Some(true)
+        );
+        assert_eq!(
+            ContextValue::Text("false".to_string()).as_boolean(),
+            Some(false)
+        );
+        assert_eq!(
+            ContextValue::Text("yes".to_string()).as_boolean(),
+            Some(true)
+        );
+        assert_eq!(
+            ContextValue::Text("no".to_string()).as_boolean(),
+            Some(false)
+        );
     }
 
     #[test]
@@ -178,4 +190,3 @@ mod tests {
         assert_eq!(val, ContextValue::Boolean(true));
     }
 }
-

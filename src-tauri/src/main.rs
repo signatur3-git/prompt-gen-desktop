@@ -1,12 +1,12 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod commands;
+mod context; // M4: Context store
 mod core;
 mod parser;
-mod commands;
 mod renderer; // M3: Rendering engine
-mod context;  // M4: Context store
-mod rules;    // M4: Rules processor
+mod rules; // M4: Rules processor
 mod validator; // M6: Package validator
 
 use commands::*;
@@ -43,8 +43,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             load_package,
             load_package_with_dependencies, // M9 Phase 2.5: Load with dependencies
-            save_package, // M7: Save package
-            create_package, // M7: Create new package
+            save_package,                   // M7: Save package
+            create_package,                 // M7: Create new package
             validate_package,
             validate_package_with_dependencies, // M9 Phase 3: Validate with dependencies
             get_package_info,
