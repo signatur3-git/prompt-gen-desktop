@@ -1,5 +1,34 @@
 # 📝 Quick Reference: Releasing a New Version
 
+## 🌿 Feature Branch Workflow
+
+### Working on Features (Lightweight CI)
+
+```bash
+# Create feature branch
+git checkout -b feature/my-feature
+
+# Make changes and commit
+git add .
+git commit -m "feat: add my feature"
+
+# Push to GitHub (triggers quick checks only: lint + tests)
+git push origin feature/my-feature
+
+# When ready, merge locally (fast-forward only)
+git checkout main
+git merge --ff-only feature/my-feature
+git push origin main  # Triggers full build on all platforms
+
+# Clean up feature branch
+git branch -d feature/my-feature
+git push origin --delete feature/my-feature
+```
+
+**Note:** Feature branches only run lint + tests (< 5 min). Main branch runs full multi-platform builds (~ 20-30 min).
+
+---
+
 ## 🚀 Release Checklist
 
 ### 1. Update Version (3 files)
