@@ -17,8 +17,6 @@
 import { useRouter } from 'vue-router';
 import MarketplaceSettings from '../components/MarketplaceSettings.vue';
 import type { MarketplacePackage } from '../services/marketplace-client';
-import { writeTextFile, mkdir } from '@tauri-apps/plugin-fs';
-import { join, appDataDir } from '@tauri-apps/api/path';
 
 const router = useRouter();
 
@@ -30,36 +28,48 @@ async function handlePackageInstall(pkg: MarketplacePackage, version: string) {
     // Download package YAML
     const yamlContent = await downloadPackage(pkg, version);
 
-    // Save to app data directory
-    const appDir = await appDataDir();
-    const packagesDir = await join(appDir, 'packages');
+    // Install to library using the library service
+    const { installPackageToLibrary } = await import('../services/package-library.service');
 
-    // Create packages directory if it doesn't exist
-    try {
-      await mkdir(packagesDir, { recursive: true });
-    } catch (error) {
-      console.log('Packages directory exists or created');
-    }
+    // Create a package object for the library
+    const packageToInstall = {
+      id: `${pkg.namespace}.${pkg.name}`,
+      version: version,
+      metadata: {
+        name: pkg.name,
+        description: pkg.description || '',
+        authors: pkg.author ? [pkg.author] : [],
+      },
+      namespaces: {} // Will be populated when package is loaded from library
+    };
 
-    const fileName = `${pkg.namespace}.${pkg.name}.yaml`;
-    const filePath = await join(packagesDir, fileName);
+    // Install to library
+    const entry = await installPackageToLibrary(packageToInstall, yamlContent, 'marketplace');
 
-    // Save package file
-    await writeTextFile(filePath, yamlContent);
+    console.log('✅ Package installed to library:', entry);
 
-    // Show success message
-    alert(
-      `Package ${pkg.namespace}/${pkg.name} v${version} installed successfully!\nLocation: ${filePath}`
+    // Show success with options
+    const openInEditor = confirm(
+      `✅ Package installed successfully!\n\n` +
+      `${pkg.namespace}/${pkg.name} v${version}\n\n` +
+      `Would you like to open it in the editor now?`
     );
 
-    // Optionally navigate to editor and load
-    const shouldLoad = confirm('Would you like to open the installed package in the editor?');
-    if (shouldLoad) {
-      // Navigate to editor with package path as query param
-      router.push({ path: '/', query: { loadPackage: filePath } });
+    if (openInEditor) {
+      // Navigate to editor and load from library
+      router.push({
+        path: '/',
+        query: { loadLibraryPackage: `${entry.id}@${entry.version}` }
+      });
+    } else {
+      // Ask if they want to view library
+      const viewLibrary = confirm('View in Library instead?');
+      if (viewLibrary) {
+        router.push('/library');
+      }
     }
   } catch (error) {
-    console.error('Package installation failed:', error);
+    console.error('❌ Package installation failed:', error);
     alert(`Failed to install package: ${(error as Error).message}`);
   }
 }
@@ -161,4 +171,3 @@ async function downloadPackage(pkg: MarketplacePackage, version: string): Promis
   }
 }
 </style>
-

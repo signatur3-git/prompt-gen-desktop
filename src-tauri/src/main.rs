@@ -7,6 +7,7 @@ mod core;
 mod parser;
 mod renderer; // M3: Rendering engine
 mod rules; // M4: Rules processor
+mod storage; // Package library storage
 mod validator; // M6: Package validator
 
 use commands::*;
@@ -22,6 +23,11 @@ fn main() {
         .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
             let handle = app.handle().clone();
+
+            // Initialize package library
+            if let Err(e) = tauri::async_runtime::block_on(init_library(handle.clone())) {
+                eprintln!("[library] Failed to initialize package library: {}", e);
+            }
 
             #[cfg(any(windows, target_os = "linux"))]
             {
@@ -60,6 +66,15 @@ fn main() {
             oauth_probe,
             http_request,
             debug_info,
+            // Library commands
+            init_library,
+            list_library_packages,
+            install_package_to_library,
+            remove_package_from_library,
+            load_package_from_library,
+            load_all_library_packages,
+            get_library_path,
+            refresh_library,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

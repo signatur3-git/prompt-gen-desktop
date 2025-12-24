@@ -14,6 +14,12 @@
         <button @click="loadPackage" class="btn-secondary">
           Open Package
         </button>
+        <button @click="$router.push('/library')" class="btn-secondary" title="Library">
+          📚 Library
+        </button>
+        <button @click="$router.push('/generate')" class="btn-secondary" title="Generate">
+          ⚡ Generate
+        </button>
         <button @click="savePackage" class="btn-primary" :disabled="!hasChanges">
           Save Package
         </button>
@@ -252,7 +258,7 @@ import RulebookEditor from './RulebookEditor.vue'
 import PackageMetadataEditor from './PackageMetadataEditor.vue'
 import MarketplaceSettings from './MarketplaceSettings.vue'
 import { marketplaceClient, type MarketplacePackage } from '../services/marketplace-client'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 // App version constant
 const APP_VERSION = '1.0.0'
@@ -938,7 +944,30 @@ async function loadPackageFromPath(filePath) {
 
 // Check if we should load a package from query params (e.g., after marketplace install)
 const route = useRoute()
+const router = useRouter()
 onMounted(async () => {
+  // Handle loading from library via query param
+  const loadLibraryPackageParam = route.query.loadLibraryPackage as string
+  if (loadLibraryPackageParam) {
+    // Parse package@version format
+    const [packageId, version] = loadLibraryPackageParam.split('@')
+    if (packageId && version) {
+      try {
+        const { loadPackageFromLibrary } = await import('../services/package-library.service')
+        const pkg = await loadPackageFromLibrary(packageId, version)
+        currentPackage.value = pkg
+        hasChanges.value = false
+        // Clear the query param
+        router.replace({ path: '/', query: {} })
+      } catch (error) {
+        console.error('Failed to load package from library:', error)
+        alert(`Failed to load package from library: ${(error as Error).message}`)
+      }
+      return
+    }
+  }
+
+  // Handle loading from file path via query param (legacy)
   const loadPackagePath = route.query.loadPackage as string
   if (loadPackagePath) {
     await loadPackageFromPath(loadPackagePath)

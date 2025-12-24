@@ -7,6 +7,7 @@ pub mod validation; // M7 Phase 3: Validation commands
 pub mod debug;
 pub mod oauth_probe;
 pub mod http;
+pub mod library; // Package library commands
 
 pub use oauth::*;
 pub use package::*;
@@ -15,3 +16,4 @@ pub use validation::*;
 pub use debug::*;
 pub use oauth_probe::*;
 pub use http::*;
+pub use library::*;

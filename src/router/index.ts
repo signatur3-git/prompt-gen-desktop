@@ -9,6 +9,16 @@ const routes = [
     component: PackageEditor,
   },
   {
+    path: '/library',
+    name: 'Library',
+    component: () => import('../pages/LibraryPage.vue'),
+  },
+  {
+    path: '/generate',
+    name: 'Generate',
+    component: () => import('../pages/GeneratePage.vue'),
+  },
+  {
     path: '/marketplace',
     name: 'Marketplace',
     component: MarketplacePage,
@@ -22,4 +32,3 @@ const router = createRouter({
 });
 
 export default router;
-
