@@ -7,6 +7,7 @@
 import { ref, computed } from 'vue';
 import { oauthCallbackHandler } from '../services/oauth-callback-handler';
 import { tokenStore } from '../stores/token.store';
+import { getDebugInfo } from '../services/debug.service';
 
 const isConnecting = ref(false);
 const authError = ref<string | null>(null);
@@ -30,7 +31,10 @@ export function useMarketplace() {
       await oauthCallbackHandler.startAuthFlow();
       return true;
     } catch (error) {
-      authError.value = (error as Error).message;
+      const baseMsg = (error as Error).message;
+      // In release builds there may be no DevTools, so attach a tiny bit of debug context.
+      const dbg = await getDebugInfo();
+      authError.value = `${baseMsg}\n\n${dbg}`;
       console.error('Marketplace connection failed:', error);
       return false;
     } finally {
@@ -68,4 +72,3 @@ export function useMarketplace() {
     clearError,
   };
 }
-

@@ -10,6 +10,17 @@
 
 import marketplaceConfig from '../config/marketplace.config';
 import { tokenStore } from '../stores/token.store';
+import { invoke } from '@tauri-apps/api/core';
+
+function canUseTauriInvoke(): boolean {
+  return typeof invoke === 'function';
+}
+
+type TauriHttpResponse = {
+  status: number;
+  contentType: string;
+  body: string;
+};
 
 export interface MarketplacePackage {
   id: string;
@@ -56,6 +67,51 @@ export class MarketplaceClient {
    */
   private async fetch(path: string, options: RequestInit = {}): Promise<any> {
     const token = tokenStore.getAccessToken();
+
+    // In packaged Windows apps, WebView fetch can fail (TLS/proxy/CORS-ish behavior).
+    // If we have Tauri IPC, prefer the Rust backend to perform HTTP.
+    if (canUseTauriInvoke()) {
+      const method = (options.method || 'GET').toUpperCase();
+      const url = `${this.baseUrl}${path}`;
+      const headers: Record<string, string> = {
+        ...(options.headers ? (options.headers as Record<string, string>) : {}),
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      let bodyText: string | null = null;
+      if (options.body != null) {
+        if (typeof options.body === 'string') bodyText = options.body;
+        else if (options.body instanceof URLSearchParams) bodyText = options.body.toString();
+        else bodyText = JSON.stringify(options.body);
+      }
+
+      let resp: TauriHttpResponse;
+      try {
+        resp = await invoke<TauriHttpResponse>('http_request', {
+          method,
+          url,
+          headers,
+          body: bodyText,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        throw new Error(`Network error calling ${url}: ${msg}`);
+      }
+
+      if (resp.status < 200 || resp.status >= 300) {
+        throw new Error(`API error (${resp.status}) calling ${url}: ${resp.body}`);
+      }
+
+      if ((resp.contentType || '').includes('application/json')) {
+        try {
+          return JSON.parse(resp.body);
+        } catch {
+          // fall through
+        }
+      }
+      return resp.body;
+    }
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };

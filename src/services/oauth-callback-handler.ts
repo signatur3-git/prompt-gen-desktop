@@ -46,6 +46,17 @@ export class OAuthCallbackHandler {
    */
   async startAuthFlow(): Promise<string> {
     try {
+      // Best-effort sanity check: ensure invoke works.
+      try {
+        await invoke<string>('debug_info');
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        throw new Error(
+          'Marketplace OAuth requires the Tauri runtime (IPC invoke), but invoke is not available.\n' +
+            `error=${msg}`
+        );
+      }
+
       const { verifier, challenge } = await oauthService.generatePKCEChallenge();
       const state = oauthService.generateState();
 

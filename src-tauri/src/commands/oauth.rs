@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
+use serde::Deserialize;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, EventTarget, State};
 use tiny_http::{Header, HeaderField, Response, Server};
@@ -22,6 +23,11 @@ pub struct OAuthCallbackInner {
 #[serde(rename_all = "camelCase")]
 pub struct OAuthStartResponse {
     pub redirect_uri: String,
+}
+
+#[derive(Deserialize)]
+struct TokenResponse {
+    access_token: Option<String>,
 }
 
 /// Start a loopback callback server on 127.0.0.1 with an OS-assigned port.
@@ -122,4 +128,78 @@ pub fn oauth_cancel_loopback(state: State<OAuthCallbackState>) -> Result<(), Str
     inner.port = None;
     inner.last_callback_url = None;
     Ok(())
+}
+
+/// Exchange an OAuth authorization code for an access token (PKCE) using the Rust backend.
+///
+/// This is more reliable than WebView fetch in some Windows release environments.
+#[tauri::command]
+pub async fn oauth_exchange_code(
+    token_endpoint: String,
+    client_id: String,
+    code: String,
+    code_verifier: String,
+    redirect_uri: String,
+) -> Result<String, String> {
+    let client = reqwest::Client::new();
+    let params = [
+        ("grant_type", "authorization_code"),
+        ("code", code.as_str()),
+        ("redirect_uri", redirect_uri.as_str()),
+        ("client_id", client_id.as_str()),
+        ("code_verifier", code_verifier.as_str()),
+    ];
+
+    let resp = client
+        .post(&token_endpoint)
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .form(&params)
+        .send()
+        .await
+        .map_err(|e| format!("network error calling {token_endpoint}: {e}"))?;
+
+    let status = resp.status();
+    let ct = resp
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| format!("failed reading token response body: {e}"))?;
+
+    if !status.is_success() {
+        return Err(format!(
+            "token exchange failed (HTTP {}), content-type: {}: {}",
+            status.as_u16(),
+            ct,
+            body
+        ));
+    }
+
+    // Try JSON first, then urlencoded.
+    if ct.contains("application/json") {
+        if let Ok(parsed) = serde_json::from_str::<TokenResponse>(&body) {
+            if let Some(token) = parsed.access_token {
+                return Ok(token);
+            }
+        }
+    }
+
+    let kv = url::form_urlencoded::parse(body.as_bytes())
+        .into_owned()
+        .collect::<std::collections::HashMap<String, String>>();
+    if let Some(token) = kv.get("access_token") {
+        if !token.is_empty() {
+            return Ok(token.clone());
+        }
+    }
+
+    Err(format!(
+        "token exchange succeeded but no access_token was found in response: {}",
+        body
+    ))
 }

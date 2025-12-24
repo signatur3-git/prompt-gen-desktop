@@ -56,6 +56,10 @@ fn main() {
             render_from_rulebook_batch_with_dependencies, // M9 Phase 3: Batch with dependencies
             oauth_start_loopback,
             oauth_cancel_loopback,
+            oauth_exchange_code,
+            oauth_probe,
+            http_request,
+            debug_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

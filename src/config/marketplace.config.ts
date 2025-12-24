@@ -6,23 +6,49 @@
  */
 
 // Production marketplace URL - can be overridden with VITE_MARKETPLACE_URL env var
-const MARKETPLACE_BASE_URL = import.meta.env.VITE_MARKETPLACE_URL || 'https://prompt-gen-marketplace-production.up.railway.app';
+const DEFAULT_PROD_BASE_URL = 'https://prompt-gen-marketplace-production.up.railway.app';
 
-// OAuth endpoints are often served outside /api (because /api may be protected by auth middleware).
-// Allow overriding the OAuth base separately if your marketplace does something different.
-// (Deprecated) use VITE_MARKETPLACE_AUTH_URL and VITE_MARKETPLACE_TOKEN_URL instead.
-// const MARKETPLACE_OAUTH_BASE_URL = ...
+// IMPORTANT:
+// Vite always loads `.env` for all modes (dev + build). If `.env` contains localhost URLs
+// (typical for development), `tauri:build` would accidentally bake localhost into your
+// production app.
+//
+// Therefore:
+// - In DEV: allow overriding via VITE_MARKETPLACE_* in `.env`.
+// - In PROD: default to the production Railway URL. Only override if you provide env vars
+//   through a production-specific mechanism (e.g., CI, `.env.production`, etc.).
+const MARKETPLACE_BASE_URL = import.meta.env.DEV
+  ? (import.meta.env.VITE_MARKETPLACE_URL || DEFAULT_PROD_BASE_URL)
+  : (import.meta.env.VITE_MARKETPLACE_URL && !import.meta.env.VITE_MARKETPLACE_URL.includes('localhost')
+      ? import.meta.env.VITE_MARKETPLACE_URL
+      : DEFAULT_PROD_BASE_URL);
 
 // OAuth endpoints are often split: authorize may be handled by a top-level route that sets cookies/session
 // while token/revoke may live under an API prefix.
-const MARKETPLACE_AUTH_BASE_URL = import.meta.env.VITE_MARKETPLACE_AUTH_URL || MARKETPLACE_BASE_URL;
-const MARKETPLACE_TOKEN_BASE_URL = import.meta.env.VITE_MARKETPLACE_TOKEN_URL || import.meta.env.VITE_MARKETPLACE_OAUTH_URL || MARKETPLACE_BASE_URL;
+const MARKETPLACE_AUTH_BASE_URL = import.meta.env.DEV
+  ? (import.meta.env.VITE_MARKETPLACE_AUTH_URL || MARKETPLACE_BASE_URL)
+  : (import.meta.env.VITE_MARKETPLACE_AUTH_URL && !import.meta.env.VITE_MARKETPLACE_AUTH_URL.includes('localhost')
+      ? import.meta.env.VITE_MARKETPLACE_AUTH_URL
+      : MARKETPLACE_BASE_URL);
+
+const MARKETPLACE_TOKEN_BASE_URL = import.meta.env.DEV
+  ? (import.meta.env.VITE_MARKETPLACE_TOKEN_URL || import.meta.env.VITE_MARKETPLACE_OAUTH_URL || MARKETPLACE_BASE_URL)
+  : (
+      // Prefer explicit token base URL if provided and not localhost.
+      (import.meta.env.VITE_MARKETPLACE_TOKEN_URL && !import.meta.env.VITE_MARKETPLACE_TOKEN_URL.includes('localhost')
+        ? import.meta.env.VITE_MARKETPLACE_TOKEN_URL
+        : (import.meta.env.VITE_MARKETPLACE_OAUTH_URL && !import.meta.env.VITE_MARKETPLACE_OAUTH_URL.includes('localhost')
+            ? import.meta.env.VITE_MARKETPLACE_OAUTH_URL
+            : MARKETPLACE_BASE_URL))
+    );
 
 export const marketplaceConfig = {
   // OAuth endpoints
   authorizationEndpoint: `${MARKETPLACE_AUTH_BASE_URL}/oauth/authorize`,
-  tokenEndpoint: `${MARKETPLACE_TOKEN_BASE_URL}/oauth/token`,
-  revokeEndpoint: `${MARKETPLACE_TOKEN_BASE_URL}/oauth/revoke`,
+  // NOTE: In production the marketplace serves the interactive consent UI under `/oauth/*`,
+  // but the programmatic token endpoints are under the API prefix.
+  tokenEndpoint: `${MARKETPLACE_TOKEN_BASE_URL}/api/v1/oauth/token`,
+  revokeEndpoint: `${MARKETPLACE_TOKEN_BASE_URL}/api/v1/oauth/revoke`,
 
   // API endpoint
   apiBaseUrl: `${MARKETPLACE_BASE_URL}/api/v1`,
