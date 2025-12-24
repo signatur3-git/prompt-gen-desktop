@@ -207,6 +207,7 @@ impl PackageLibrary {
     }
 
     /// Find entry by package ID (returns latest version)
+    #[allow(dead_code)]
     pub fn find_latest(&self, package_id: &str) -> Option<&LibraryEntry> {
         self.packages
             .iter()
@@ -215,6 +216,7 @@ impl PackageLibrary {
     }
 
     /// Get all versions of a package
+    #[allow(dead_code)]
     pub fn get_versions(&self, package_id: &str) -> Vec<&LibraryEntry> {
         self.packages
             .iter()
