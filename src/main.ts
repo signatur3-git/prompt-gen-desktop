@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
+import router from './router'
 
 // Minimal runtime probe to detect if we're actually running inside Tauri.
 // This is intentionally safe: it won't throw if Tauri isn't present.
@@ -32,4 +33,6 @@ try {
   console.error('[runtime] probe error:', e)
 }
 
-createApp(App).mount('#app')
+const app = createApp(App)
+app.use(router)
+app.mount('#app')

@@ -1,8 +1,7 @@
 <template>
   <div class="package-browser">
     <div class="browser-header">
-      <h3>📦 Marketplace Package Browser</h3>
-      <button @click="$emit('close')" class="btn-close">×</button>
+      <h3>📦 Browse Packages</h3>
     </div>
 
     <!-- Search Bar -->
@@ -223,9 +222,10 @@ async function handleInstall() {
     emit('install', selectedPackage.value, selectedVersion.value);
     installSuccess.value = true;
 
-    // Auto-close after success
+    // Show success for 2 seconds, then clear (parent handles the actual install)
     setTimeout(() => {
-      emit('close');
+      installSuccess.value = false;
+      selectedPackage.value = null;
     }, 2000);
   } catch (err) {
     installError.value = (err as Error).message;
@@ -266,10 +266,11 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 600px;
-  background: #1e1e1e;
-  color: #d4d4d4;
+  background: var(--browser-bg, #ffffff);
+  color: var(--browser-text, #1a1a1a);
   border-radius: 8px;
   overflow: hidden;
+  border: 1px solid var(--browser-border, #e0e0e0);
 }
 
 .browser-header {
@@ -277,19 +278,20 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: #252526;
-  border-bottom: 1px solid #3e3e42;
+  background: var(--browser-header-bg, #f5f5f5);
+  border-bottom: 1px solid var(--browser-border, #e0e0e0);
 }
 
 .browser-header h3 {
   margin: 0;
   font-size: 18px;
+  color: var(--browser-text, #1a1a1a);
 }
 
 .btn-close {
   background: none;
   border: none;
-  color: #d4d4d4;
+  color: var(--browser-text, #1a1a1a);
   font-size: 24px;
   cursor: pointer;
   padding: 0;
@@ -302,35 +304,35 @@ onMounted(() => {
 }
 
 .btn-close:hover {
-  background: #3e3e42;
+  background: var(--browser-hover, #e0e0e0);
 }
 
 .search-section {
   display: flex;
   gap: 8px;
   padding: 16px 20px;
-  background: #252526;
-  border-bottom: 1px solid #3e3e42;
+  background: var(--browser-header-bg, #f5f5f5);
+  border-bottom: 1px solid var(--browser-border, #e0e0e0);
 }
 
 .search-input {
   flex: 1;
   padding: 8px 12px;
-  background: #3c3c3c;
-  border: 1px solid #555;
+  background: var(--input-bg, #ffffff);
+  border: 1px solid var(--input-border, #c0c0c0);
   border-radius: 4px;
-  color: #d4d4d4;
+  color: var(--browser-text, #1a1a1a);
   font-size: 14px;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #007acc;
+  border-color: var(--accent-color, #007acc);
 }
 
 .btn-search {
   padding: 8px 16px;
-  background: #0e639c;
+  background: var(--accent-color, #0e639c);
   color: white;
   border: none;
   border-radius: 4px;
@@ -339,7 +341,7 @@ onMounted(() => {
 }
 
 .btn-search:hover {
-  background: #1177bb;
+  background: var(--accent-hover, #1177bb);
 }
 
 .loading-state,
@@ -352,13 +354,14 @@ onMounted(() => {
   justify-content: center;
   gap: 16px;
   padding: 40px;
+  color: var(--browser-text-muted, #666);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #3e3e42;
-  border-top-color: #007acc;
+  border: 4px solid var(--spinner-bg, #e0e0e0);
+  border-top-color: var(--accent-color, #007acc);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -369,7 +372,7 @@ onMounted(() => {
 
 .btn-retry {
   padding: 8px 16px;
-  background: #0e639c;
+  background: var(--accent-color, #0e639c);
   color: white;
   border: none;
   border-radius: 4px;
@@ -380,27 +383,28 @@ onMounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 16px 20px;
+  background: var(--browser-bg, #ffffff);
 }
 
 .package-card {
   padding: 16px;
   margin-bottom: 12px;
-  background: #252526;
-  border: 1px solid #3e3e42;
+  background: var(--card-bg, #f9f9f9);
+  border: 1px solid var(--browser-border, #e0e0e0);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .package-card:hover {
-  background: #2d2d30;
-  border-color: #007acc;
+  background: var(--card-hover, #f0f0f0);
+  border-color: var(--accent-color, #007acc);
 }
 
 .package-card.selected {
-  background: #2d2d30;
-  border-color: #007acc;
-  box-shadow: 0 0 0 1px #007acc;
+  background: var(--card-selected, #e8f4fd);
+  border-color: var(--accent-color, #007acc);
+  box-shadow: 0 0 0 1px var(--accent-color, #007acc);
 }
 
 .package-header {
@@ -413,18 +417,18 @@ onMounted(() => {
 .package-header h4 {
   margin: 0;
   font-size: 16px;
-  color: #4ec9b0;
+  color: var(--package-name-color, #0066cc);
 }
 
 .package-author {
   font-size: 12px;
-  color: #858585;
+  color: var(--browser-text-muted, #666);
 }
 
 .package-description {
   margin: 8px 0;
   font-size: 14px;
-  color: #cccccc;
+  color: var(--browser-text, #1a1a1a);
 }
 
 .package-meta {
@@ -432,7 +436,7 @@ onMounted(() => {
   gap: 16px;
   margin-top: 8px;
   font-size: 12px;
-  color: #858585;
+  color: var(--browser-text-muted, #666);
 }
 
 .package-tags {
@@ -444,10 +448,10 @@ onMounted(() => {
 
 .tag {
   padding: 2px 8px;
-  background: #3e3e42;
+  background: var(--tag-bg, #e0e0e0);
   border-radius: 12px;
   font-size: 11px;
-  color: #d4d4d4;
+  color: var(--browser-text, #1a1a1a);
 }
 
 .package-details {
@@ -456,11 +460,11 @@ onMounted(() => {
   top: 0;
   bottom: 0;
   width: 400px;
-  background: #1e1e1e;
-  border-left: 1px solid #3e3e42;
+  background: var(--details-bg, #ffffff);
+  border-left: 1px solid var(--browser-border, #e0e0e0);
   padding: 20px;
   overflow-y: auto;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
 .details-header {
@@ -473,13 +477,13 @@ onMounted(() => {
 .details-header h3 {
   margin: 0;
   font-size: 18px;
-  color: #4ec9b0;
+  color: var(--package-name-color, #0066cc);
 }
 
 .btn-close-small {
   background: none;
   border: none;
-  color: #d4d4d4;
+  color: var(--browser-text, #1a1a1a);
   font-size: 20px;
   cursor: pointer;
   padding: 0;
@@ -487,7 +491,7 @@ onMounted(() => {
 
 .details-description {
   margin-bottom: 24px;
-  color: #cccccc;
+  color: var(--browser-text, #1a1a1a);
   line-height: 1.5;
 }
 
@@ -498,21 +502,21 @@ onMounted(() => {
 .details-section h4 {
   margin: 0 0 8px 0;
   font-size: 14px;
-  color: #858585;
+  color: var(--browser-text-muted, #666);
 }
 
 .version-select {
   width: 100%;
   padding: 8px;
-  background: #3c3c3c;
-  border: 1px solid #555;
+  background: var(--input-bg, #ffffff);
+  border: 1px solid var(--input-border, #c0c0c0);
   border-radius: 4px;
-  color: #d4d4d4;
+  color: var(--browser-text, #1a1a1a);
   font-size: 14px;
 }
 
 .version-empty {
-  color: #858585;
+  color: var(--browser-text-muted, #666);
   font-size: 13px;
 }
 
@@ -534,12 +538,12 @@ onMounted(() => {
 }
 
 .btn-install {
-  background: #0e639c;
+  background: var(--accent-color, #0e639c);
   color: white;
 }
 
 .btn-install:hover:not(:disabled) {
-  background: #1177bb;
+  background: var(--accent-hover, #1177bb);
 }
 
 .btn-install:disabled {
@@ -548,12 +552,12 @@ onMounted(() => {
 }
 
 .btn-preview {
-  background: #3e3e42;
-  color: #d4d4d4;
+  background: var(--button-secondary, #e0e0e0);
+  color: var(--browser-text, #1a1a1a);
 }
 
 .btn-preview:hover {
-  background: #505050;
+  background: var(--button-secondary-hover, #d0d0d0);
 }
 
 .success-message,
@@ -564,15 +568,50 @@ onMounted(() => {
 }
 
 .success-message {
-  background: #1e3a1e;
-  color: #4ec9b0;
-  border: 1px solid #4ec9b0;
+  background: var(--success-bg, #e8f5e9);
+  color: var(--success-text, #2e7d32);
+  border: 1px solid var(--success-border, #4caf50);
 }
 
 .error-message {
-  background: #3a1e1e;
-  color: #f48771;
-  border: 1px solid #f48771;
+  background: var(--error-bg, #ffebee);
+  color: var(--error-text, #c62828);
+  border: 1px solid var(--error-border, #f44336);
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+  .package-browser {
+    --browser-bg: #1e1e1e;
+    --browser-text: #d4d4d4;
+    --browser-text-muted: #858585;
+    --browser-border: #3e3e42;
+    --browser-header-bg: #252526;
+    --browser-hover: #3e3e42;
+    --input-bg: #3c3c3c;
+    --input-border: #555;
+    --accent-color: #0e639c;
+    --accent-hover: #1177bb;
+    --spinner-bg: #3e3e42;
+    --card-bg: #252526;
+    --card-hover: #2d2d30;
+    --card-selected: #2d2d30;
+    --package-name-color: #4ec9b0;
+    --tag-bg: #3e3e42;
+    --details-bg: #1e1e1e;
+    --button-secondary: #3e3e42;
+    --button-secondary-hover: #505050;
+    --success-bg: #1e3a1e;
+    --success-text: #4ec9b0;
+    --success-border: #4ec9b0;
+    --error-bg: #3a1e1e;
+    --error-text: #f48771;
+    --error-border: #f48771;
+  }
+
+  .package-details {
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+  }
 }
 </style>
 

@@ -14,14 +14,11 @@
         <button @click="loadPackage" class="btn-secondary">
           Open Package
         </button>
-        <button @click="showPackageBrowser = true" class="btn-secondary" title="Browse Marketplace">
-          📦 Browse
-        </button>
         <button @click="savePackage" class="btn-primary" :disabled="!hasChanges">
           Save Package
         </button>
-        <button @click="showMarketplaceSettings = true" class="btn-secondary" title="Marketplace Settings">
-          ⚙️ Marketplace
+        <button @click="$router.push('/marketplace')" class="btn-secondary" title="Marketplace">
+          📦 Marketplace
         </button>
       </div>
     </div>
@@ -225,26 +222,6 @@
       @cancel="showAddNamespaceDialog = false"
     />
 
-    <!-- Marketplace Settings Dialog -->
-    <div v-if="showMarketplaceSettings" class="modal-overlay" @click.self="showMarketplaceSettings = false">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Marketplace Settings</h2>
-          <button @click="showMarketplaceSettings = false" class="btn-close">×</button>
-        </div>
-        <MarketplaceSettings />
-      </div>
-    </div>
-
-    <!-- Package Browser Dialog -->
-    <div v-if="showPackageBrowser" class="modal-overlay" @click.self="showPackageBrowser = false">
-      <div class="modal-content modal-large">
-        <PackageBrowser
-          @close="showPackageBrowser = false"
-          @install="handlePackageInstall"
-        />
-      </div>
-    </div>
 
     <!-- Validation Panel (bottom) -->
     <ValidationPanel
@@ -259,7 +236,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck - Functional code, TypeScript migration pending (see MARKETPLACE_INTEGRATION_STATUS.md)
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open, save } from '@tauri-apps/plugin-dialog'
 import ComponentTree from './ComponentTree.vue'
@@ -274,10 +251,8 @@ import RulesEditor from './RulesEditor.vue'
 import RulebookEditor from './RulebookEditor.vue'
 import PackageMetadataEditor from './PackageMetadataEditor.vue'
 import MarketplaceSettings from './MarketplaceSettings.vue'
-import PackageBrowser from './PackageBrowser.vue'
 import { marketplaceClient, type MarketplacePackage } from '../services/marketplace-client'
-import { writeTextFile, mkdir } from '@tauri-apps/plugin-fs'
-import { join, appDataDir } from '@tauri-apps/api/path'
+import { useRoute } from 'vue-router'
 
 // App version constant
 const APP_VERSION = '1.0.0'
@@ -291,8 +266,6 @@ const validationWarnings = ref([])
 const hasChanges = ref(false)
 const showNewPackageDialog = ref(false)
 const showAddNamespaceDialog = ref(false)
-const showMarketplaceSettings = ref(false)
-const showPackageBrowser = ref(false)
 const newRulebookData = ref({
   name: '',
   description: '',
@@ -936,8 +909,8 @@ async function handlePackageInstall(pkg, version) {
       await loadPackageFromPath(filePath)
     }
 
-    // Close browser
-    showPackageBrowser.value = false
+    // Close marketplace modal
+    showMarketplaceSettings.value = false
   } catch (error) {
     console.error('Package installation failed:', error)
     alert(`Failed to install package: ${error.message}`)
@@ -962,6 +935,15 @@ async function loadPackageFromPath(filePath) {
     alert(`Failed to load package: ${error.message}`)
   }
 }
+
+// Check if we should load a package from query params (e.g., after marketplace install)
+const route = useRoute()
+onMounted(async () => {
+  const loadPackagePath = route.query.loadPackage as string
+  if (loadPackagePath) {
+    await loadPackageFromPath(loadPackagePath)
+  }
+})
 </script>
 
 <style scoped>
@@ -969,8 +951,8 @@ async function loadPackageFromPath(filePath) {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #1e1e1e;
-  color: #d4d4d4;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .editor-header {
@@ -978,8 +960,8 @@ async function loadPackageFromPath(filePath) {
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background: #252526;
-  border-bottom: 1px solid #3e3e42;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .header-left {
@@ -992,16 +974,17 @@ async function loadPackageFromPath(filePath) {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .package-version {
   font-size: 14px;
-  color: #858585;
+  color: var(--text-muted);
 }
 
 .app-version {
   font-size: 14px;
-  color: #6c757d;
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -1018,8 +1001,8 @@ async function loadPackageFromPath(filePath) {
 
 .sidebar {
   width: 280px;
-  background: #252526;
-  border-right: 1px solid #3e3e42;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
   overflow-y: auto;
 }
 
@@ -1027,12 +1010,13 @@ async function loadPackageFromPath(filePath) {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  background: var(--bg-primary);
 }
 
 .preview-panel {
   width: 400px;
-  background: #1e1e1e;
-  border-left: 1px solid #3e3e42;
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-color);
   overflow-y: auto;
 }
 
@@ -1044,17 +1028,18 @@ async function loadPackageFromPath(filePath) {
 .welcome-message h2 {
   margin-bottom: 16px;
   font-size: 24px;
+  color: var(--text-primary);
 }
 
 .welcome-message p {
   margin-bottom: 32px;
-  color: #858585;
+  color: var(--text-muted);
 }
 
 .placeholder {
   text-align: center;
   padding: 60px 20px;
-  color: #858585;
+  color: var(--text-muted);
 }
 
 .btn-primary,
@@ -1069,12 +1054,12 @@ async function loadPackageFromPath(filePath) {
 }
 
 .btn-primary {
-  background: #0e639c;
+  background: var(--accent-color);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #1177bb;
+  background: var(--accent-hover);
 }
 
 .btn-primary:disabled {
@@ -1083,12 +1068,12 @@ async function loadPackageFromPath(filePath) {
 }
 
 .btn-secondary {
-  background: #3e3e42;
-  color: #d4d4d4;
+  background: var(--button-secondary-bg);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover {
-  background: #505050;
+  background: var(--button-secondary-hover);
 }
 
 .btn-large {
@@ -1107,13 +1092,13 @@ async function loadPackageFromPath(filePath) {
   display: flex;
   gap: 12px;
   padding: 16px 20px;
-  background: #252526;
-  border-top: 1px solid #3e3e42;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-create {
   padding: 10px 20px;
-  background: #0e639c;
+  background: var(--accent-color);
   color: white;
   border: none;
   border-radius: 4px;
@@ -1123,7 +1108,7 @@ async function loadPackageFromPath(filePath) {
 }
 
 .btn-create:hover:not(:disabled) {
-  background: #1177bb;
+  background: var(--accent-hover);
 }
 
 .btn-create:disabled {
@@ -1133,8 +1118,8 @@ async function loadPackageFromPath(filePath) {
 
 .btn-cancel {
   padding: 10px 20px;
-  background: #3e3e42;
-  color: #d4d4d4;
+  background: var(--button-secondary-bg);
+  color: var(--text-primary);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -1143,7 +1128,7 @@ async function loadPackageFromPath(filePath) {
 }
 
 .btn-cancel:hover {
-  background: #505050;
+  background: var(--button-secondary-hover);
 }
 
 /* Modal Overlay */
@@ -1161,7 +1146,7 @@ async function loadPackageFromPath(filePath) {
 }
 
 .modal-content {
-  background: #1e1e1e;
+  background: var(--bg-primary);
   border-radius: 8px;
   max-width: 600px;
   width: 90%;
@@ -1181,19 +1166,19 @@ async function loadPackageFromPath(filePath) {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid #3e3e42;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
   margin: 0;
-  color: #cccccc;
+  color: var(--text-secondary);
   font-size: 18px;
 }
 
 .btn-close {
   background: none;
   border: none;
-  color: #cccccc;
+  color: var(--text-secondary);
   font-size: 28px;
   cursor: pointer;
   padding: 0;
@@ -1206,7 +1191,7 @@ async function loadPackageFromPath(filePath) {
 }
 
 .btn-close:hover {
-  background: #3e3e42;
+  background: var(--button-secondary-bg);
 }
 
 </style>

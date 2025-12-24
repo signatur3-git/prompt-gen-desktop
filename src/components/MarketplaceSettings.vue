@@ -35,11 +35,25 @@
         Disconnect
       </button>
     </div>
+
+    <!-- Package Browser Section (shown when authenticated) -->
+    <div v-if="isAuthenticated" class="packages-section">
+      <h3>Browse Marketplace Packages</h3>
+      <PackageBrowser
+        @install="handlePackageInstall"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useMarketplace } from '../composables/useMarketplace';
+import PackageBrowser from './PackageBrowser.vue';
+import type { MarketplacePackage } from '../services/marketplace-client';
+
+const emit = defineEmits<{
+  install: [pkg: MarketplacePackage, version: string];
+}>();
 
 const {
   isAuthenticated,
@@ -65,6 +79,10 @@ async function handleDisconnect() {
     await disconnect();
   }
 }
+
+function handlePackageInstall(pkg: MarketplacePackage, version: string) {
+  emit('install', pkg, version);
+}
 </script>
 
 <style scoped>
@@ -72,13 +90,14 @@ async function handleDisconnect() {
   padding: 1.5rem;
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 8px;
-  background-color: var(--background-color, #f9f9f9);
+  background-color: var(--bg-secondary, #f9f9f9);
+  color: var(--text-primary, #333);
 }
 
 h3 {
   margin-top: 0;
   margin-bottom: 1rem;
-  color: var(--heading-color, #333);
+  color: var(--text-primary, #333);
 }
 
 .connection-section,
@@ -88,7 +107,7 @@ h3 {
 
 .info-text {
   margin-bottom: 1rem;
-  color: var(--text-color, #666);
+  color: var(--text-secondary, #666);
   line-height: 1.5;
 }
 
@@ -100,60 +119,63 @@ h3 {
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
+  font-weight: 500;
 }
 
 .connect-button {
-  background-color: var(--primary-color, #4CAF50);
+  background-color: var(--button-primary, #4CAF50);
   color: white;
 }
 
 .connect-button:hover:not(:disabled) {
-  background-color: var(--primary-hover, #45a049);
+  background-color: var(--button-primary-hover, #45a049);
 }
 
 .connect-button:disabled {
-  background-color: var(--disabled-color, #cccccc);
+  background-color: var(--button-disabled, #cccccc);
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .disconnect-button {
-  background-color: var(--danger-color, #f44336);
+  background-color: var(--button-danger, #f44336);
   color: white;
 }
 
 .disconnect-button:hover {
-  background-color: var(--danger-hover, #da190b);
+  background-color: var(--button-danger-hover, #da190b);
 }
 
 .error-message {
   margin-top: 1rem;
   padding: 1rem;
-  background-color: #ffebee;
-  border-left: 4px solid #f44336;
+  background-color: var(--error-bg, #ffebee);
+  border-left: 4px solid var(--error-border, #f44336);
   border-radius: 4px;
 }
 
 .error-message p {
   margin: 0 0 0.5rem 0;
-  color: #c62828;
+  color: var(--error-text, #c62828);
 }
 
 .clear-error-button {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   background-color: transparent;
-  border: 1px solid #c62828;
-  color: #c62828;
+  border: 1px solid var(--error-border, #c62828);
+  color: var(--error-text, #c62828);
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .clear-error-button:hover {
-  background-color: #ffebee;
+  background-color: var(--error-hover-bg, #ffebee);
 }
 
 .success-message {
-  color: #2e7d32;
+  color: var(--success-text, #2e7d32);
   font-weight: 500;
   margin-bottom: 1rem;
 }
@@ -164,18 +186,54 @@ h3 {
 
 .user-details {
   padding: 1rem;
-  background-color: white;
+  background-color: var(--bg-primary, white);
+  border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 6px;
   margin-top: 0.5rem;
 }
 
 .user-details p {
   margin: 0.5rem 0;
-  color: var(--text-color, #666);
+  color: var(--text-secondary, #666);
 }
 
 .user-details strong {
-  color: var(--heading-color, #333);
+  color: var(--text-primary, #333);
+}
+
+.packages-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.packages-section h3 {
+  margin-bottom: 1rem;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .marketplace-settings {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2a2a2a;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --border-color: #404040;
+    --button-primary: #4CAF50;
+    --button-primary-hover: #45a049;
+    --button-danger: #f44336;
+    --button-danger-hover: #da190b;
+    --button-disabled: #4a4a4a;
+    --error-bg: #3a1f1f;
+    --error-border: #f44336;
+    --error-text: #ff8a80;
+    --error-hover-bg: #4a2525;
+    --success-text: #81c784;
+
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+  }
 }
 </style>
 
