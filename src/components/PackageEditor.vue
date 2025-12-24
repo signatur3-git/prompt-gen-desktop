@@ -259,9 +259,10 @@ import PackageMetadataEditor from './PackageMetadataEditor.vue'
 import MarketplaceSettings from './MarketplaceSettings.vue'
 import { marketplaceClient, type MarketplacePackage } from '../services/marketplace-client'
 import { useRoute, useRouter } from 'vue-router'
+import { useVersion } from '../composables/useVersion'
 
-// App version constant
-const APP_VERSION = '1.0.0'
+// Get app version from composable
+const { version: APP_VERSION } = useVersion()
 
 // State
 const currentPackage = ref(null)
