@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import './styles/theme.css'
 
 // Minimal runtime probe to detect if we're actually running inside Tauri.
 // This is intentionally safe: it won't throw if Tauri isn't present.
