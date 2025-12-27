@@ -2,12 +2,11 @@
 
 <template>
   <div class="generate-page">
-    <header class="page-header">
-      <button @click="$router.push('/')" class="back-button">
-        ← Back to Editor
-      </button>
-      <h1>⚡ Generate Prompts</h1>
-    </header>
+    <MainNavigation>
+      <template #status>
+        <MarketplaceStatus v-if="isAuthenticated" />
+      </template>
+    </MainNavigation>
 
     <main class="page-content">
       <div class="generate-layout">
@@ -25,8 +24,8 @@
             <button @click="loadPackages" class="btn-secondary">Retry</button>
           </div>
 
-          <div v-else-if="packages.length === 0" class="empty-state">
-            <p>No packages in library</p>
+          <div v-else-if="packagesWithRulebooks.length === 0" class="empty-state">
+            <p>No packages with rulebooks</p>
             <button @click="$router.push('/marketplace')" class="btn-primary">
               Browse Marketplace
             </button>
@@ -34,7 +33,7 @@
 
           <div v-else class="packages-list">
             <div
-              v-for="pkg in packages"
+              v-for="pkg in packagesWithRulebooks"
               :key="pkg.id"
               class="package-item"
               :class="{ expanded: expandedPackages.has(pkg.id) }"
@@ -200,8 +199,12 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { invoke } from '@tauri-apps/api/core';
 import { loadAllLibraryPackages, type Package } from '../services/package-library.service';
+import MainNavigation from '../components/MainNavigation.vue';
+import MarketplaceStatus from '../components/MarketplaceStatus.vue';
+import { useMarketplace } from '../composables/useMarketplace';
 
 const router = useRouter();
+const { isAuthenticated } = useMarketplace();
 
 // State
 const packages = ref<PackageWithRulebooks[]>([]);
@@ -234,6 +237,10 @@ interface PackageWithRulebooks extends Package {
 // Computed
 const contextDefaults = computed(() => {
   return selectedRulebook.value?.context_defaults || {};
+});
+
+const packagesWithRulebooks = computed(() => {
+  return packages.value.filter(pkg => pkg.rulebooks && pkg.rulebooks.length > 0);
 });
 
 // Methods
@@ -274,9 +281,10 @@ async function loadPackages() {
       };
     });
 
-    // Auto-expand first package if there are packages
-    if (packages.value.length > 0) {
-      expandedPackages.value.add(packages.value[0].id);
+    // Auto-expand first package that has rulebooks
+    const firstPackageWithRulebooks = packages.value.find(p => p.rulebooks && p.rulebooks.length > 0);
+    if (firstPackageWithRulebooks) {
+      expandedPackages.value.add(firstPackageWithRulebooks.id);
     }
   } catch (e) {
     error.value = (e as Error).message;

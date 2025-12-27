@@ -1,22 +1,28 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import PackageEditor from '../components/PackageEditor.vue';
+import HomePage from '../pages/HomePage.vue';
+import EditPage from '../pages/EditPage.vue';
 import MarketplacePage from '../pages/MarketplacePage.vue';
 
 const routes = [
   {
     path: '/',
-    name: 'Editor',
-    component: PackageEditor,
+    name: 'Home',
+    component: HomePage,
   },
   {
-    path: '/library',
-    name: 'Library',
-    component: () => import('../pages/LibraryPage.vue'),
+    path: '/edit',
+    name: 'Edit',
+    component: EditPage,
   },
   {
     path: '/generate',
     name: 'Generate',
     component: () => import('../pages/GeneratePage.vue'),
+  },
+  {
+    path: '/library',
+    name: 'Library',
+    component: () => import('../pages/LibraryPage.vue'),
   },
   {
     path: '/marketplace',

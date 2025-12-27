@@ -1,33 +1,33 @@
 <template>
   <div class="package-editor">
-    <!-- Header Bar -->
-    <div class="editor-header">
-      <div class="header-left">
-        <h1>{{ packageName || 'RPG Desktop' }}</h1>
-        <span v-if="packageVersion" class="package-version">Package v{{ packageVersion }}</span>
-        <span v-else class="app-version">App v{{ APP_VERSION }}</span>
-      </div>
-      <div class="header-actions">
-        <button @click="showNewPackageDialog = true" class="btn-secondary">
-          New Package
+    <!-- Contextual Navigation for Editor Tools -->
+    <ContextualNav>
+      <template #info>
+        <div v-if="packageName" class="package-info">
+          <span class="package-icon">📦</span>
+          <span class="package-name">{{ packageName }}</span>
+          <span class="package-version">v{{ packageVersion }}</span>
+        </div>
+        <div v-else class="no-package-info">
+          <span class="info-text">No package loaded</span>
+        </div>
+      </template>
+
+      <template #actions>
+        <button @click="handleNewPackage" class="btn-contextual">
+          📄 New
         </button>
-        <button @click="loadPackage" class="btn-secondary">
-          Open Package
+        <button @click="handleOpenPackage" class="btn-contextual">
+          📂 Open
         </button>
-        <button @click="$router.push('/library')" class="btn-secondary" title="Library">
-          📚 Library
+        <button @click="savePackage" class="btn-contextual btn-primary" :disabled="!hasChanges">
+          💾 Save
         </button>
-        <button @click="$router.push('/generate')" class="btn-secondary" title="Generate">
-          ⚡ Generate
+        <button @click="handleExportPackage" class="btn-contextual" :disabled="!currentPackage">
+          📤 Export
         </button>
-        <button @click="savePackage" class="btn-primary" :disabled="!hasChanges">
-          Save Package
-        </button>
-        <button @click="$router.push('/marketplace')" class="btn-secondary" title="Marketplace">
-          📦 Marketplace
-        </button>
-      </div>
-    </div>
+      </template>
+    </ContextualNav>
 
     <!-- Main Editor Area -->
     <div class="editor-content">
@@ -245,6 +245,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open, save } from '@tauri-apps/plugin-dialog'
+import ContextualNav from './ContextualNav.vue'
 import ComponentTree from './ComponentTree.vue'
 import NewPackageDialog from './NewPackageDialog.vue'
 import AddNamespaceDialog from './AddNamespaceDialog.vue'
@@ -260,9 +261,46 @@ import MarketplaceSettings from './MarketplaceSettings.vue'
 import { marketplaceClient, type MarketplacePackage } from '../services/marketplace-client'
 import { useRoute, useRouter } from 'vue-router'
 import { useVersion } from '../composables/useVersion'
+import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts'
 
 // Get app version from composable
 const { version: APP_VERSION } = useVersion()
+
+// Setup keyboard shortcuts
+useKeyboardShortcuts([
+  {
+    key: 'n',
+    ctrl: true,
+    description: 'New Package',
+    handler: () => handleNewPackage()
+  },
+  {
+    key: 'o',
+    ctrl: true,
+    description: 'Open Package',
+    handler: () => handleOpenPackage()
+  },
+  {
+    key: 's',
+    ctrl: true,
+    description: 'Save Package',
+    handler: () => {
+      if (hasChanges.value) {
+        savePackage()
+      }
+    }
+  },
+  {
+    key: 'e',
+    ctrl: true,
+    description: 'Export Package',
+    handler: () => {
+      if (currentPackage.value) {
+        handleExportPackage()
+      }
+    }
+  }
+]);
 
 // State
 const currentPackage = ref(null)
@@ -337,6 +375,40 @@ watch(currentPackage, (newPkg, oldPkg) => {
     selectedComponent.value = null
   }
 })
+
+// Tools/Actions Handlers
+function handleNewPackage() {
+  showNewPackageDialog.value = true
+}
+
+function handleOpenPackage() {
+  loadPackage()
+}
+
+async function handleExportPackage() {
+  if (!currentPackage.value) return
+
+  try {
+    const filePath = await save({
+      filters: [{
+        name: 'Package',
+        extensions: ['yaml', 'yml']
+      }]
+    })
+
+    if (filePath) {
+      await invoke('save_package', {
+        package: currentPackage.value,
+        path: filePath
+      })
+      alert('Package exported successfully!')
+    }
+  } catch (error) {
+    console.error('Failed to export package:', error)
+    alert(`Failed to export package: ${error}`)
+  }
+}
+
 
 // Methods
 async function loadPackage() {
@@ -958,8 +1030,8 @@ onMounted(async () => {
         const pkg = await loadPackageFromLibrary(packageId, version)
         currentPackage.value = pkg
         hasChanges.value = false
-        // Clear the query param
-        router.replace({ path: '/', query: {} })
+        // Clear the query param but stay on edit page
+        router.replace({ path: '/edit', query: {} })
       } catch (error) {
         console.error('Failed to load package from library:', error)
         alert(`Failed to load package from library: ${(error as Error).message}`)
@@ -980,49 +1052,90 @@ onMounted(async () => {
 .package-editor {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex: 1; /* Take remaining space instead of 100vh */
+  overflow: hidden; /* Prevent scrolling issues */
   background: var(--bg-primary);
   color: var(--text-primary);
 }
 
-.editor-header {
+/* Contextual Navigation Styles */
+.package-info {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  gap: 8px;
+  padding: 4px 12px;
+  background-color: var(--bg-tertiary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
 }
 
-.header-left {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
+.package-icon {
+  font-size: 16px;
+  line-height: 1;
 }
 
-.header-left h1 {
-  margin: 0;
-  font-size: 18px;
+.package-name {
   font-weight: 600;
   color: var(--text-primary);
+  font-size: 14px;
 }
 
 .package-version {
-  font-size: 14px;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
-.app-version {
-  font-size: 14px;
-  color: var(--text-muted);
+.no-package-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+}
+
+.info-text {
+  font-size: 13px;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
-.header-actions {
+.btn-contextual {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background-color: var(--button-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
+.btn-contextual:hover:not(:disabled) {
+  background-color: var(--button-hover-bg);
+  border-color: var(--border-hover);
+}
+
+.btn-contextual:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-contextual.btn-primary {
+  background-color: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
+
+.btn-contextual.btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* Editor Layout */
 .editor-content {
   display: flex;
   flex: 1;
