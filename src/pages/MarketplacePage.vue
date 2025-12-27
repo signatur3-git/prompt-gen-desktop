@@ -1,11 +1,10 @@
 <template>
   <div class="marketplace-page">
-    <header class="page-header">
-      <button @click="$router.push('/')" class="back-button">
-        ← Back to Editor
-      </button>
-      <h1>📦 Marketplace</h1>
-    </header>
+    <MainNavigation>
+      <template #status>
+        <MarketplaceStatus v-if="isAuthenticated" />
+      </template>
+    </MainNavigation>
 
     <main class="page-content">
       <MarketplaceSettings @install="handlePackageInstall" />
@@ -15,10 +14,14 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import MainNavigation from '../components/MainNavigation.vue';
 import MarketplaceSettings from '../components/MarketplaceSettings.vue';
+import MarketplaceStatus from '../components/MarketplaceStatus.vue';
 import type { MarketplacePackage } from '../services/marketplace-client';
+import { useMarketplace } from '../composables/useMarketplace';
 
 const router = useRouter();
+const { isAuthenticated } = useMarketplace();
 
 /**
  * Handle package installation from marketplace
@@ -58,7 +61,7 @@ async function handlePackageInstall(pkg: MarketplacePackage, version: string) {
     if (openInEditor) {
       // Navigate to editor and load from library
       router.push({
-        path: '/',
+        path: '/edit',
         query: { loadLibraryPackage: `${entry.id}@${entry.version}` }
       });
     } else {
@@ -89,41 +92,8 @@ async function downloadPackage(pkg: MarketplacePackage, version: string): Promis
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: inherit;
-  color: inherit;
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  background-color: var(--bg-secondary, #f5f5f5);
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.back-button {
-  padding: 0.5rem 1rem;
-  background-color: var(--button-bg, #ffffff);
-  color: var(--text-primary, #1a1a1a);
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 6px;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.back-button:hover {
-  background-color: var(--button-hover-bg, #f0f0f0);
-  border-color: var(--border-hover, #c0c0c0);
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary, #1a1a1a);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .page-content {
@@ -133,41 +103,5 @@ async function downloadPackage(pkg: MarketplacePackage, version: string): Promis
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
-  background-color: inherit;
-}
-
-/* Dark theme support */
-@media (prefers-color-scheme: dark) {
-  .marketplace-page {
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #2a2a2a;
-    --text-primary: #e0e0e0;
-    --text-secondary: #a0a0a0;
-    --border-color: #404040;
-    --button-bg: #2a2a2a;
-    --button-hover-bg: #353535;
-    --border-hover: #505050;
-  }
-
-  .page-header {
-    background-color: var(--bg-secondary);
-    border-bottom-color: var(--border-color);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  }
-
-  .back-button {
-    background-color: var(--button-bg);
-    color: var(--text-primary);
-    border-color: var(--border-color);
-  }
-
-  .back-button:hover {
-    background-color: var(--button-hover-bg);
-    border-color: var(--border-hover);
-  }
-
-  .page-header h1 {
-    color: var(--text-primary);
-  }
 }
 </style>

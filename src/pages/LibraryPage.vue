@@ -1,21 +1,28 @@
 <template>
   <div class="library-page">
-    <header class="page-header">
-      <div class="header-content">
-        <button @click="$router.push('/')" class="back-button">
-          ← Back to Editor
-        </button>
-        <h1>📚 Package Library</h1>
-      </div>
-      <div class="header-actions">
-        <button @click="handleRefresh" class="btn-secondary" :disabled="loading">
+    <MainNavigation>
+      <template #status>
+        <MarketplaceStatus v-if="isAuthenticated" />
+      </template>
+    </MainNavigation>
+
+    <ContextualNav>
+      <template #info>
+        <div class="page-title">
+          <span class="title-icon">📚</span>
+          <span class="title-text">Package Library</span>
+        </div>
+      </template>
+
+      <template #actions>
+        <button @click="handleRefresh" class="btn-action" :disabled="loading">
           🔄 Refresh
         </button>
-        <button @click="handleImport" class="btn-secondary">
+        <button @click="handleImport" class="btn-action">
           📥 Import Package
         </button>
-      </div>
-    </header>
+      </template>
+    </ContextualNav>
 
     <main class="page-content">
       <PackageLibraryBrowser
@@ -33,11 +40,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import MainNavigation from '../components/MainNavigation.vue';
+import ContextualNav from '../components/ContextualNav.vue';
 import PackageLibraryBrowser from '../components/PackageLibraryBrowser.vue';
+import MarketplaceStatus from '../components/MarketplaceStatus.vue';
 import { listLibraryPackages, removePackageFromLibrary, refreshLibrary, type LibraryEntry } from '../services/package-library.service';
 import { open } from '@tauri-apps/plugin-dialog';
+import { useMarketplace } from '../composables/useMarketplace';
 
 const router = useRouter();
+const { isAuthenticated } = useMarketplace();
 const packages = ref<LibraryEntry[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
@@ -75,7 +87,7 @@ async function handleRefresh() {
 async function handleLoad(entry: LibraryEntry) {
   // Navigate to editor with package loaded
   router.push({
-    path: '/',
+    path: '/edit',
     query: { loadLibraryPackage: `${entry.id}@${entry.version}` }
   });
 }
@@ -98,7 +110,7 @@ async function handleDelete(entry: LibraryEntry) {
   }
 }
 
-async function handleExport(entry: LibraryEntry) {
+async function handleExport(_entry: LibraryEntry) {
   // TODO: Implement export functionality
   alert('Export feature coming soon!');
 }
@@ -121,7 +133,7 @@ async function handleImport() {
 
     // Parse the package to get metadata
     const { invoke } = await import('@tauri-apps/api/core');
-    const pkg = await invoke('load_package', { path: selected });
+    const pkg = await invoke('load_package', { path: selected }) as any;
 
     // Install to library as 'imported' source
     const { installPackageToLibrary } = await import('../services/package-library.service');
@@ -148,66 +160,44 @@ async function handleImport() {
   color: var(--text-primary);
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  background-color: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.header-content {
+.page-title {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 8px;
 }
 
-.back-button {
-  padding: 0.5rem 1rem;
-  background-color: var(--button-bg);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s;
+.title-icon {
+  font-size: 18px;
+  line-height: 1;
 }
 
-.back-button:hover {
-  background-color: var(--button-hover-bg);
-  border-color: var(--border-hover);
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
+.title-text {
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.header-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn-secondary {
-  padding: 0.5rem 1rem;
-  background-color: var(--button-secondary-bg);
+.btn-action {
+  padding: 6px 14px;
+  background-color: var(--button-bg);
   color: var(--text-primary);
-  border: none;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--button-secondary-hover);
+.btn-action:hover:not(:disabled) {
+  background-color: var(--button-hover-bg);
+  border-color: var(--border-hover);
 }
 
-.btn-secondary:disabled {
+.btn-action:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

@@ -82,7 +82,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useRouter } from 'vue-router';
 import type { LibraryEntry } from '../services/package-library.service';
 
 const props = defineProps<{
@@ -98,7 +97,6 @@ defineEmits<{
   import: [];
 }>();
 
-const router = useRouter();
 
 const sortedPackages = computed(() => {
   return [...props.packages].sort((a, b) => {

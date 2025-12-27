@@ -83,4 +83,3 @@ impl LibraryEntry {
         self.last_used = chrono::Utc::now();
     }
 }
-

@@ -145,7 +145,8 @@ impl PackageLibrary {
         }
 
         // Remove from library
-        self.packages.retain(|e| !(e.id == package_id && e.version == version));
+        self.packages
+            .retain(|e| !(e.id == package_id && e.version == version));
 
         // Save library
         self.save()?;
@@ -164,8 +165,7 @@ impl PackageLibrary {
 
         // Load package file
         let full_path = self.library_path.join(&self.packages[entry_idx].path);
-        let package = crate::parser::load_package(&full_path)
-            .map_err(|e| e.to_string())?;
+        let package = crate::parser::load_package(&full_path).map_err(|e| e.to_string())?;
 
         // Update last used timestamp
         self.packages[entry_idx].touch();

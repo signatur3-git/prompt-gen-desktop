@@ -30,9 +30,7 @@ pub async fn init_library(app: AppHandle) -> Result<(), String> {
 pub async fn list_library_packages(app: AppHandle) -> Result<Vec<LibraryEntry>, String> {
     let state = app.state::<LibraryState>();
     let library_lock = state.0.lock().unwrap();
-    let library = library_lock
-        .as_ref()
-        .ok_or("Library not initialized")?;
+    let library = library_lock.as_ref().ok_or("Library not initialized")?;
 
     Ok(library.list_packages().to_vec())
 }
@@ -54,9 +52,7 @@ pub async fn install_package_to_library(
 
     let state = app.state::<LibraryState>();
     let mut library_lock = state.0.lock().unwrap();
-    let library = library_lock
-        .as_mut()
-        .ok_or("Library not initialized")?;
+    let library = library_lock.as_mut().ok_or("Library not initialized")?;
 
     library.install_package(&package, &yaml_content, source)
 }
@@ -70,9 +66,7 @@ pub async fn remove_package_from_library(
 ) -> Result<(), String> {
     let state = app.state::<LibraryState>();
     let mut library_lock = state.0.lock().unwrap();
-    let library = library_lock
-        .as_mut()
-        .ok_or("Library not initialized")?;
+    let library = library_lock.as_mut().ok_or("Library not initialized")?;
 
     library.remove_package(&package_id, &version)
 }
@@ -86,9 +80,7 @@ pub async fn load_package_from_library(
 ) -> Result<Package, String> {
     let state = app.state::<LibraryState>();
     let mut library_lock = state.0.lock().unwrap();
-    let library = library_lock
-        .as_mut()
-        .ok_or("Library not initialized")?;
+    let library = library_lock.as_mut().ok_or("Library not initialized")?;
 
     library.load_package(&package_id, &version)
 }
@@ -98,9 +90,7 @@ pub async fn load_package_from_library(
 pub async fn load_all_library_packages(app: AppHandle) -> Result<HashMap<String, Package>, String> {
     let state = app.state::<LibraryState>();
     let library_lock = state.0.lock().unwrap();
-    let library = library_lock
-        .as_ref()
-        .ok_or("Library not initialized")?;
+    let library = library_lock.as_ref().ok_or("Library not initialized")?;
 
     library.load_all_packages()
 }
@@ -110,9 +100,7 @@ pub async fn load_all_library_packages(app: AppHandle) -> Result<HashMap<String,
 pub async fn get_library_path(app: AppHandle) -> Result<String, String> {
     let state = app.state::<LibraryState>();
     let library_lock = state.0.lock().unwrap();
-    let library = library_lock
-        .as_ref()
-        .ok_or("Library not initialized")?;
+    let library = library_lock.as_ref().ok_or("Library not initialized")?;
 
     Ok(library.library_path().display().to_string())
 }
@@ -134,4 +122,3 @@ pub async fn refresh_library(app: AppHandle) -> Result<Vec<LibraryEntry>, String
 
     Ok(library.list_packages().to_vec())
 }
-
